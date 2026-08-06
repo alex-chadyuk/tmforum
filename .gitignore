@@ -225,3 +225,5 @@ __marimo__/
 .Trashes
 ehthumbs.db
 Thumbs.db
+# Claude Code local settings
+.claude/

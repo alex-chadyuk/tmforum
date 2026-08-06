@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tmforum"
+version = "0.1.0"
+description = "Unofficial Python SDK for TM Forum Open APIs: dataclass entity models with @type-aware serialization and REST CRUD helpers"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Alex Chadyuk", email = "alex@chady.uk" }]
+keywords = [
+  "tmforum",
+  "tmf",
+  "oda",
+  "open-api",
+  "bss",
+  "telecom",
+  "product-catalog",
+  "product-ordering",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Telecommunications Industry",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = ["requests>=2.25"]
+
+[project.urls]
+Homepage = "https://github.com/alex-chadyuk/tmforum"
+Issues = "https://github.com/alex-chadyuk/tmforum/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "build", "twine"]

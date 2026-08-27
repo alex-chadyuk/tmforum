@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 @dataclass
@@ -1297,8 +1297,7 @@ class AgreementItemRef(ItemRef):
 
 @dataclass(repr=False)
 class AgreementRef(EntityRef):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+    _referred_type: str = "Agreement"
 
 
 @dataclass(repr=False)
@@ -1379,6 +1378,16 @@ class IntentSpecificationRef(EntityRef):
 @dataclass(repr=False)
 class FinancialAccountRef(EntityRef):
     _referred_type: str = "FinancialAccount"
+
+
+@dataclass(repr=False)
+class GeographicAddressRef(EntityRef):
+    _referred_type: str = "GeographicAddress"
+
+
+@dataclass(repr=False)
+class MarketingCampaignRef(EntityRef):
+    _referred_type: str = "MarketingCampaign"
 
 
 @dataclass(repr=False)
@@ -2733,6 +2742,13 @@ class SalesNote(Entity):
 
 
 @dataclass(repr=False)
+class RevenueEstimate(Entity):
+    amount: Optional[Money] = None
+    description: Optional[str] = None
+    revenueType: Optional[str] = None
+
+
+@dataclass(repr=False)
 class SalesLead(Entity, BaseCRUDMixin):
     id: Optional[str] = None
     description: Optional[str] = None
@@ -2753,7 +2769,7 @@ class SalesLead(Entity, BaseCRUDMixin):
     relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
         default_factory=list
     )
-    salesOpportunity: Optional[SalesOpportunityRef] = None
+    salesOpportunity: Optional[List[SalesOpportunityRef]] = field(default_factory=list)
     channel: Optional[ChannelRef] = None
     characteristic: Optional[List[Characteristic]] = field(default_factory=list)
     status: Optional[SalesLeadStatusType] = None
@@ -2761,10 +2777,22 @@ class SalesLead(Entity, BaseCRUDMixin):
     statusChangeReason: Optional[str] = None
     type: Optional[str] = None
     validFor: Optional[TimePeriod] = None
+    salesLeadType: Optional[str] = None
+    revenueEstimate: Optional[List[RevenueEstimate]] = field(default_factory=list)
+    marketingCampaign: Optional[MarketingCampaignRef] = None
+    marketSegment: Optional[MarketSegmentRef] = None
+    productOffering: Optional[List[ProductOfferingRef]] = field(default_factory=list)
+    agreement: Optional[List[AgreementRef]] = field(default_factory=list)
+    prospectContactMedium: Optional[List[ContactMedium]] = field(default_factory=list)
+    productSpecification: Optional[List[ProductSpecificationRef]] = field(
+        default_factory=list
+    )
+    category: Optional[CategoryRef] = None
+    product: Optional[List[ProductRef]] = field(default_factory=list)
 
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
-        return f"{context.api_base_url}/salesManagement/v4/salesLead"
+        return f"{context.api_base_url}/salesManagement/v5/salesLead"
 
 
 @dataclass(repr=False)
@@ -3113,6 +3141,16 @@ class PhoneContactMedium(ContactMedium):
 
 
 @dataclass(repr=False)
+class FaxContactMedium(ContactMedium):
+    faxNumber: Optional[str] = None
+
+
+@dataclass(repr=False)
+class SocialContactMedium(ContactMedium):
+    socialNetworkId: Optional[str] = None
+
+
+@dataclass(repr=False)
 class GeographicAddressContactMedium(ContactMedium):
     city: Optional[str] = None
     country: Optional[str] = None
@@ -3120,6 +3158,7 @@ class GeographicAddressContactMedium(ContactMedium):
     stateOrProvince: Optional[str] = None
     street1: Optional[str] = None
     street2: Optional[str] = None
+    geographicAddress: Optional[GeographicAddressRef] = None
 
 
 @dataclass(repr=False)

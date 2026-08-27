@@ -233,6 +233,7 @@ def rate_plan_product():
     }
     return rate_plan_product
 
+
 @pytest.fixture
 def product_offering_1():
     po = {
@@ -1532,6 +1533,7 @@ def test_rate_plan_product(rate_plan_product):
     product_dict = product_instance.to_dict()
     assert product_dict["@type"] == "RatePlanProduct"
     assert product_dict["@baseType"] == "Product"
+
 
 def test_party_ref_has_no_version():
     party = Individual(id="123", familyName="Doe", version="1.0")

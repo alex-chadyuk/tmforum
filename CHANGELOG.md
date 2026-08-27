@@ -4,6 +4,25 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.2.0 — 2026-08-27
+
+Source spec: TMF699 Sales Management v5.0.0.
+
+### Added
+
+- New reference classes: `MarketingCampaignRef`, `GeographicAddressRef`.
+- New entity: `RevenueEstimate` (`amount`, `description`, `revenueType`).
+- New `ContactMedium` subtypes: `FaxContactMedium` (`faxNumber`), `SocialContactMedium` (`socialNetworkId`).
+- `SalesLead`: new v5 fields `salesLeadType`, `revenueEstimate`, `marketingCampaign`, `marketSegment`, `productOffering`, `agreement`, `prospectContactMedium`, `productSpecification`, `category`, `product` (v4 fields `type`, `estimatedRevenue`, `prospectContact` are kept alongside).
+- `GeographicAddressContactMedium`: new `geographicAddress` field.
+- Test suite for TMF699 Sales (`tests/test_sales.py`).
+
+### Changed
+
+- `SalesLead.salesOpportunity` is now a list (`Optional[List[SalesOpportunityRef]]`), matching the v5 spec.
+- `SalesLead.get_resource_path` now targets `salesManagement/v5/salesLead` (was `v4`).
+- `AgreementRef` is now implemented (was a `NotImplementedError` placeholder).
+
 ## 0.1.0 — 2026-08-06
 
 ### Added

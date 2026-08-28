@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 
 @dataclass
@@ -658,6 +658,12 @@ class CommercialRelationshipTypeEnum(enum.Enum):
 
 
 @enum.unique
+class ConnectionAssociationType(enum.Enum):
+    POINT_TO_POINT = "pointtoPoint"
+    POINT_TO_MULTIPOINT = "pointtoMultipoint"
+
+
+@enum.unique
 class EntryType(enum.Enum):
     POST_CLOSURE = "postClosure"
     FULFILMENT = "fulfilment"
@@ -1148,6 +1154,12 @@ class ResourceAdministrativeStateType(enum.Enum):
 
 
 @enum.unique
+class ResourceGraphSpecificationRelationshipType(enum.Enum):
+    ADJACENCY = "adjacency"
+    CONNECTIVITY = "connectivity"
+
+
+@enum.unique
 class ResourceOperationalStateType(enum.Enum):
     ENABLE = "enable"
     DISABLE = "disable"
@@ -1381,8 +1393,22 @@ class CapacitySpecificationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class ConnectionPointSpecificationRef(EntityRef):
+    _referred_type: str = "ConnectionPointSpecification"
+    version: Optional[str] = None
+
+
+@dataclass(repr=False)
 class CustomerBillRef(EntityRef):
     _referred_type: str = "CustomerBill"
+
+
+@dataclass(repr=False)
+class EndpointSpecificationRef(EntityRef):
+    _referred_type: str = "EndpointSpecification"
+    role: Optional[str] = None
+    isRoot: Optional[bool] = None
+    connectionPointSpecification: Optional[ConnectionPointSpecificationRef] = None
 
 
 @dataclass(repr=False)
@@ -1590,6 +1616,11 @@ class RelatedOrderItem(EntityRef):
 @dataclass(repr=False)
 class ResourceCandidateRef(EntityRef):
     _referred_type: Optional[str] = "ResourceCandidate"
+
+
+@dataclass(repr=False)
+class ResourceGraphSpecificationRef(EntityRef):
+    _referred_type: Optional[str] = "ResourceGraphSpecification"
 
 
 @dataclass(repr=False)
@@ -4573,6 +4604,43 @@ class ResourcePool(LogicalResource, BaseCRUDMixin):
 
 
 @dataclass(repr=False)
+class ConnectionSpecification(Entity):
+    """Resource graph edge specification connecting endpoint specifications."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    associationType: Optional[ConnectionAssociationType] = None
+    endpointSpecification: Optional[List[EndpointSpecificationRef]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(repr=False)
+class ResourceGraphSpecificationRelationship(Entity):
+    """Link between resource graph specifications."""
+
+    relationshipType: Optional[ResourceGraphSpecificationRelationshipType] = None
+    resourceGraph: Optional[ResourceGraphSpecificationRef] = None
+
+
+@dataclass(repr=False)
+class ResourceGraphSpecification(Entity):
+    """Resource graph specification."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    graphSpecificationRelationship: Optional[
+        List[ResourceGraphSpecificationRelationship]
+    ] = field(default_factory=list)
+    connectionSpecification: Optional[List[ConnectionSpecification]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(repr=False)
 class ResourceSpecificationRelationship(Entity):
     """Migration, substitution, dependency or exclusivity relationship between resource specifications."""
 
@@ -4629,8 +4697,30 @@ class ResourceSpecification(Entity, BaseCRUDMixin):
 
 
 @dataclass(repr=False)
+class PhysicalResourceSpecification(ResourceSpecification):
+    """Specification for a physical resource (hardware item)."""
+
+    model: Optional[str] = None
+    part: Optional[str] = None
+    sku: Optional[str] = None
+    vendor: Optional[str] = None
+
+
+@dataclass(repr=False)
 class LogicalResourceSpecification(ResourceSpecification):
     """Specification for a logical resource; base type for ResourcePoolSpecification."""
+
+
+@dataclass(repr=False)
+class ResourceFunctionSpecification(LogicalResourceSpecification):
+    """Specification of a function transforming inputs into outputs, e.g. a firewall."""
+
+    connectionPointSpecification: Optional[List[ConnectionPointSpecificationRef]] = (
+        field(default_factory=list)
+    )
+    connectivitySpecification: Optional[List[ResourceGraphSpecification]] = field(
+        default_factory=list
+    )
 
 
 @dataclass(repr=False)

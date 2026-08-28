@@ -4,6 +4,41 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.4.0 — 2026-08-28
+
+Source spec: TMF634 Resource Catalog Management v5.0.0.
+
+### Added
+
+- New `ResourceSpecification` subtypes, resolved polymorphically by `@type` and sharing the
+  existing `resourceCatalog/v5/resourceSpecification` path:
+  - `PhysicalResourceSpecification` (`model`, `part`, `sku`, `vendor`).
+  - `ResourceFunctionSpecification`, a `LogicalResourceSpecification` subtype
+    (`connectionPointSpecification`, `connectivitySpecification`).
+- New entities: `ResourceGraphSpecification` (`id`, `href`, `name`, `description`,
+  `graphSpecificationRelationship`, `connectionSpecification`),
+  `ResourceGraphSpecificationRelationship` (`relationshipType`, `resourceGraph`) and
+  `ConnectionSpecification` (`id`, `href`, `name`, `associationType`, `endpointSpecification`).
+- New reference classes: `ConnectionPointSpecificationRef` (`version`),
+  `EndpointSpecificationRef` (`role`, `isRoot`, `connectionPointSpecification`),
+  `ResourceGraphSpecificationRef`.
+- New enums: `ConnectionAssociationType`, `ResourceGraphSpecificationRelationshipType`.
+- Resource catalog test coverage in `tests/test_resource_catalog.py`.
+
+### Notes
+
+- No existing classes were modified. `ResourceSpecification` and its whole dependency tree
+  (`TargetResourceSchema`, `FeatureSpecification`, `FeatureSpecificationRelationship`,
+  `CharacteristicSpecification`, `CharacteristicSpecificationRelationship`,
+  `CharacteristicValueSpecification`, `ResourceSpecificationRelationship`, `Attachment`,
+  `AttachmentRef`, `RelatedPartyRefOrPartyRoleRef`, `ExternalIdentifier`, `PolicyRef`,
+  `IntentSpecificationRef`, `TimePeriod`, `Quantity`) was already field-complete against the
+  base, `_FVO` and `_MVO` variants.
+- The spec's `CharacteristicSpecification.@valueSchemaLocation` is not implemented: `Entity`
+  only maps the reserved `@schemaLocation`, `@referredType`, `@type` and
+  `@targetProductOrderItemSchema` keys, and supporting a new one would require changing the
+  base class's serialization.
+
 ## 0.3.0 — 2026-08-28
 
 Source spec: TMF699 Sales Management v5.0.0.

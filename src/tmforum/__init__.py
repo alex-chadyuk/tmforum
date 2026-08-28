@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 
 @dataclass
@@ -1655,6 +1655,19 @@ class ResourceGraphSpecificationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class ResourceOrderItemRef(EntityRef):
+    _referred_type: Optional[str] = "ResourceOrderItem"
+    itemId: Optional[str] = None
+    resourceOrderHref: Optional[str] = None
+    resourceOrderId: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ResourceOrderRef(EntityRef):
+    _referred_type: Optional[str] = "ResourceOrder"
+
+
+@dataclass(repr=False)
 class ResourceRef(EntityRef):
     _referred_type: Optional[str] = "Resource"
 
@@ -3111,6 +3124,10 @@ class RelatedPlaceRefOrValue(Entity):
             PlaceRef,
         ]
     ] = None
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    _referred_type: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -3387,6 +3404,14 @@ class Attachment(Entity):
     content: Optional[str] = None
     mimeType: Optional[str] = None
     size: Optional[Quantity] = None
+
+
+@dataclass(repr=False)
+class AttachmentRefOrValue(Attachment):
+    """An attachment carried either by reference or by value (TMF652)."""
+
+    isRef: Optional[bool] = None
+    _referred_type: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -4777,6 +4802,123 @@ class ResourcePool(LogicalResource, BaseCRUDMixin):
         for item in items:
             availability_checks.append(AvailabilityCheck.from_dict(item))
         return availability_checks
+
+
+@dataclass(repr=False)
+class ExternalId(Entity):
+    """Identifier of an entity within an external system (TMF652)."""
+
+    id: Optional[str] = None
+    entityType: Optional[str] = None
+    owner: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ResourceRefOrValue(Entity):
+    """A resource carried either by reference or by value (TMF652)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    name: Optional[str] = None
+    endOperatingDate: Optional[str] = None
+    startOperatingDate: Optional[str] = None
+    resourceVersion: Optional[str] = None
+    administrativeState: Optional[ResourceAdministrativeStateType] = None
+    operationalState: Optional[ResourceOperationalStateType] = None
+    resourceStatus: Optional[ResourceStatusType] = None
+    usageState: Optional[ResourceUsageStateType] = None
+    place: Optional[RelatedPlaceRefOrValue] = None
+    note: Optional[List[Note]] = field(default_factory=list)
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedParty]] = field(default_factory=list)
+    resourceCharacteristic: Optional[List[Characteristic]] = field(default_factory=list)
+    resourceRelationship: Optional[List[ResourceRelationship]] = field(
+        default_factory=list
+    )
+    resourceSpecification: Optional[ResourceSpecificationRef] = None
+    _referred_type: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ResourceOrderItemRelationship(Entity):
+    """Link between resource order items (TMF652)."""
+
+    relationshipType: Optional[str] = None
+    orderItem: Optional[ResourceOrderItemRef] = None
+
+
+@dataclass(repr=False)
+class ResourceOrderItem(Entity):
+    """A single actionable item of a resource order (TMF652)."""
+
+    id: Optional[str] = None
+    action: Optional[OrderItemActionType] = None
+    quantity: Optional[int] = None
+    state: Optional[str] = None
+    appointment: Optional[AppointmentRef] = None
+    orderItemRelationship: Optional[List[ResourceOrderItemRelationship]] = field(
+        default_factory=list
+    )
+    resource: Optional[ResourceRefOrValue] = None
+    resourceSpecification: Optional[ResourceSpecificationRef] = None
+
+
+@dataclass(repr=False)
+class ResourceOrder(Entity, BaseCRUDMixin):
+    """A request to provision a set of logical and physical resources (TMF652).
+
+    A Resource Order is triggered by a service order fulfilment or raised
+    directly against the resource ordering API.
+
+    Usage:
+        order = ResourceOrder.from_dict(payload)
+        order.get(context, resource_id="1234")
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    name: Optional[str] = None
+    externalId: Optional[str] = None
+    orderType: Optional[str] = None
+    priority: Optional[int] = None
+    state: Optional[str] = None
+    orderDate: Optional[str] = None
+    completionDate: Optional[str] = None
+    expectedCompletionDate: Optional[str] = None
+    requestedCompletionDate: Optional[str] = None
+    requestedStartDate: Optional[str] = None
+    startDate: Optional[str] = None
+    externalReference: Optional[List[ExternalId]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    orderItem: Optional[List[ResourceOrderItem]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedParty]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/resourceOrderingManagement/v4/resourceOrder"
+
+
+@dataclass(repr=False)
+class CancelResourceOrder(Entity, BaseCRUDMixin):
+    """A task requesting cancellation of an existing resource order (TMF652)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    cancellationReason: Optional[str] = None
+    effectiveCancellationDate: Optional[str] = None
+    requestedCancellationDate: Optional[str] = None
+    state: Optional[TaskStateType] = None
+    resourceOrder: Optional[ResourceOrderRef] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}/resourceOrderingManagement/v4/cancelResourceOrder"
+        )
 
 
 @dataclass(repr=False)

@@ -81,6 +81,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF638 Service Inventory | `serviceInventory/v5` | `Service` |
 | TMF639 Resource Inventory | `resourceInventory/v5` | `Resource` |
 | TMF634 Resource Catalog | `resourceCatalog/v5` | `ResourceCatalog`, `ResourceCategory`, `ResourceCandidate`, `ResourceSpecification`, `PhysicalResourceSpecification`, `LogicalResourceSpecification`, `ResourceFunctionSpecification`, `ImportJob`, `ExportJob` |
+| TMF652 Resource Ordering | `resourceOrderingManagement/v4` | `ResourceOrder`, `ResourceOrderItem`, `CancelResourceOrder` |
 | TMF685 Resource Pool | `resourcePool/v5` | `ResourcePool`, `ResourcePoolSpecification`, `CapacitySpecification` |
 | TMF676 Payment | `payment/v4` | `PaymentPlan` |
 | TMF760 Product Configuration | *(entity models only)* | `CheckProductConfiguration.from_order()` |

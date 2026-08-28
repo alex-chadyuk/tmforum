@@ -4,6 +4,49 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.8.0 — 2026-08-28
+
+Source spec: TMF652 Resource Order Management v4.0.0.
+
+The SDK had no TMF652 coverage at all. This release adds both of the API's REST
+resources plus the sub-entities and references they depend on. Paths follow the
+spec's `basePath` (`resourceOrderingManagement/v4`); no v5 TMF652 spec is vendored.
+
+The `_Create` / `_Update` schema variants add no fields over their base schemas —
+they only omit server-assigned ones — so each entity is modelled from the base
+schema alone, in line with the SDK's single-class-plus-`BaseCRUDMixin` pattern.
+
+### Added
+
+- `ResourceOrder` — CRUD resource at `resourceOrderingManagement/v4/resourceOrder`:
+  `id`, `href`, `category`, `description`, `name`, `externalId`, `orderType`,
+  `priority`, `state`, `orderDate`, `completionDate`, `expectedCompletionDate`,
+  `requestedCompletionDate`, `requestedStartDate`, `startDate`, `externalReference`,
+  `note`, `orderItem`, `relatedParty`.
+- `CancelResourceOrder` — CRUD resource at
+  `resourceOrderingManagement/v4/cancelResourceOrder`: `id`, `href`,
+  `cancellationReason`, `effectiveCancellationDate`, `requestedCancellationDate`,
+  `state` (`TaskStateType`), `resourceOrder`.
+- `ResourceOrderItem` — `id`, `action` (`OrderItemActionType`), `quantity`, `state`,
+  `appointment`, `orderItemRelationship`, `resource`, `resourceSpecification`.
+- `ResourceOrderItemRelationship` — `relationshipType`, `orderItem`.
+- `ResourceRefOrValue` — a resource carried by reference or by value.
+- `AttachmentRefOrValue` — subclasses `Attachment`, adding `isRef` and
+  `@referredType`.
+- `ExternalId` — `id`, `entityType`, `owner`. Kept distinct from the existing
+  `ExternalIdentifier`, which has a different shape (`externalIdentifierType`,
+  `value`) and a different `@type` on the wire.
+- `ResourceOrderRef`, `ResourceOrderItemRef` — new `EntityRef` subclasses.
+- `RelatedPlaceRefOrValue` gained `id`, `href`, `name` and `@referredType`, the flat
+  shape TMF652 uses. Existing fields and defaults are unchanged.
+
+### Notes
+
+- `ResourceOrder.state` and `ResourceOrderItem.state` are typed `Optional[str]`:
+  TMF652 v4 declares both as free-form strings with no enumeration.
+- `CancelOrder` is defined in the spec but referenced nowhere; it is not modelled.
+- Event, event-payload and hub schemas are out of scope, as in previous releases.
+
 ## 0.7.0 — 2026-08-28
 
 Source spec: TMF633 Service Catalog Management v4.0.0.

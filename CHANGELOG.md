@@ -4,6 +4,58 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.7.0 — 2026-08-28
+
+Source spec: TMF633 Service Catalog Management v4.0.0.
+
+All four REST resources of TMF633 were missing from the SDK; this release adds them
+together with the sub-entities and references they depend on. Paths follow the spec's
+`basePath` (`serviceCatalogManagement/v4`) rather than the v5 used elsewhere, because
+no v5 TMF633 spec is vendored.
+
+### Added
+
+- `ServiceCatalog` — CRUD resource at `serviceCatalogManagement/v4/serviceCatalog`:
+  `id`, `href`, `name`, `description`, `version`, `lifecycleStatus`, `lastUpdate`,
+  `validFor`, `category`, `relatedParty`.
+- `ServiceCategory` — CRUD resource at `serviceCatalogManagement/v4/serviceCategory`:
+  as above plus `parentId`, `isRoot`, `serviceCandidate`, and nested `category`.
+- `ServiceCandidate` — CRUD resource at `serviceCatalogManagement/v4/serviceCandidate`:
+  as above plus `serviceSpecification`.
+- `ServiceSpecification` — CRUD resource at
+  `serviceCatalogManagement/v4/serviceSpecification`: `isBundle`, `targetEntitySchema`,
+  `attachment` (typed as the spec's `AttachmentRefOrValue` union,
+  `Union[Attachment, AttachmentRef]`), `constraint`, `entitySpecRelationship`,
+  `featureSpecification`, `relatedParty`, `resourceSpecification`,
+  `serviceLevelSpecification`, `serviceSpecRelationship`, `specCharacteristic`.
+- `ServiceSpecRelationship` — `id`, `href`, `name`, `relationshipType`, `role`,
+  `validFor`.
+- `EntitySpecificationRelationship` — as above plus
+  `associationSpec: AssociationSpecificationRef`.
+- `TargetEntitySchema` — `_schema_location`, the entity counterpart to the existing
+  `TargetResourceSchema`.
+- `FeatureSpecificationCharacteristic` — subclass of `CharacteristicSpecification`
+  adding `featureSpecCharRelationship` and `featureSpecCharacteristicValue`.
+  Subclassing keeps `FeatureSpecification.featureSpecCharacteristic` typed as
+  `List[CharacteristicSpecification]` while letting the `@type` discriminator resolve
+  payloads to the richer class.
+- `FeatureSpecificationCharacteristicRelationship` — `characteristicId`, `featureId`,
+  `name`, `relationshipType`, `resourceSpecificationHref`, `resourceSpecificationId`,
+  `validFor`.
+- New references: `AssociationSpecificationRef`, `ConstraintRef` (with `version`),
+  `ServiceCategoryRef` (with `version`), `ServiceLevelSpecificationRef`.
+- `version` on the existing `ServiceCandidateRef`, per the spec.
+- `constraint: List[ConstraintRef]` on the existing `FeatureSpecification`. The
+  pre-existing `policyConstraint: List[PolicyRef]` is unchanged.
+- `tests/test_service_catalog.py` covering all four resources.
+
+### Notes
+
+- `ImportJob` and `ExportJob` already match the TMF633 field set, but their
+  `get_resource_path` remains bound to `resourceCatalog/v5`, so TMF633's
+  `serviceCatalogManagement/v4` job endpoints are not addressable.
+- `Quantity.amount` stays `int`; TMF633 types it as `number`.
+
 ## 0.6.0 — 2026-08-28
 
 Source spec: TMF632 Party Management v5.0.0.

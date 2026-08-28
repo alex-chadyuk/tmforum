@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 
 @dataclass
@@ -1347,6 +1347,11 @@ class AppointmentRef(EntityRef):
 
 
 @dataclass(repr=False)
+class AssociationSpecificationRef(EntityRef):
+    _referred_type: str = "AssociationSpecification"
+
+
+@dataclass(repr=False)
 class AttachmentRef(EntityRef):
     _referred_type: str = "Attachment"
     url: Optional[str] = None
@@ -1403,6 +1408,12 @@ class CapacitySpecificationRef(EntityRef):
 @dataclass(repr=False)
 class ConnectionPointSpecificationRef(EntityRef):
     _referred_type: str = "ConnectionPointSpecification"
+    version: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ConstraintRef(EntityRef):
+    _referred_type: str = "Constraint"
     version: Optional[str] = None
 
 
@@ -1677,6 +1688,18 @@ class SalesProjectRef(EntityRef):
 @dataclass(repr=False)
 class ServiceCandidateRef(EntityRef):
     _referred_type: Optional[str] = "ServiceCandidate"
+    version: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ServiceCategoryRef(EntityRef):
+    _referred_type: Optional[str] = "ServiceCategory"
+    version: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ServiceLevelSpecificationRef(EntityRef):
+    _referred_type: Optional[str] = "ServiceLevelSpecification"
 
 
 @dataclass(repr=False)
@@ -1822,6 +1845,13 @@ class TimePeriod(Entity):
 @dataclass(repr=False)
 class TargetResourceSchema(Entity):
     """Reference to the schema and type of target resource described by resource specification."""
+
+    _schema_location: Optional[str] = None
+
+
+@dataclass(repr=False)
+class TargetEntitySchema(Entity):
+    """Reference to the schema and type of target entity described by a specification."""
 
     _schema_location: Optional[str] = None
 
@@ -4571,6 +4601,31 @@ class FeatureSpecificationRelationship(Entity):
 
 
 @dataclass(repr=False)
+class FeatureSpecificationCharacteristicRelationship(Entity):
+    """Relationship between characteristics of feature specifications."""
+
+    characteristicId: Optional[str] = None
+    featureId: Optional[str] = None
+    name: Optional[str] = None
+    relationshipType: Optional[str] = None
+    resourceSpecificationHref: Optional[str] = None
+    resourceSpecificationId: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class FeatureSpecificationCharacteristic(CharacteristicSpecification):
+    """Characteristic of a feature specification."""
+
+    featureSpecCharRelationship: Optional[
+        List[FeatureSpecificationCharacteristicRelationship]
+    ] = field(default_factory=list)
+    featureSpecCharacteristicValue: Optional[List[CharacteristicValueSpecification]] = (
+        field(default_factory=list)
+    )
+
+
+@dataclass(repr=False)
 class FeatureSpecification(Entity):
     """Specification for an entity feature."""
 
@@ -4586,6 +4641,7 @@ class FeatureSpecification(Entity):
     featureSpecCharacteristic: Optional[List[CharacteristicSpecification]] = field(
         default_factory=list
     )
+    constraint: Optional[List[ConstraintRef]] = field(default_factory=list)
     name: Optional[str] = None
 
 
@@ -5056,6 +5112,175 @@ class RelatedServiceOrderItem(Entity):
 class RelatedEntityRefOrValue(Entity):
     role: Optional[str] = None
     entity: Optional[Union[Entity, EntityRef]] = None
+
+
+@dataclass(repr=False)
+class ServiceSpecRelationship(Entity):
+    """A service specification related to another service specification."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    relationshipType: Optional[str] = None
+    role: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class EntitySpecificationRelationship(Entity):
+    """A relationship from a specification to another entity specification."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    relationshipType: Optional[str] = None
+    role: Optional[str] = None
+    associationSpec: Optional[AssociationSpecificationRef] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class ServiceSpecification(Entity, BaseCRUDMixin):
+    """Blueprint describing a type of service, its characteristics and features.
+
+    A service specification defines what a service looks like before it is
+    instantiated: the characteristics it carries, the resource specifications
+    it relies on, and its relationships to other specifications.
+
+    Attributes:
+        name (Optional[str]): Name given to the specification.
+        isBundle (Optional[bool]): True when the specification bundles others.
+        lifecycleStatus (Optional[str]): Current lifecycle status, e.g. "Active".
+        specCharacteristic (Optional[List[CharacteristicSpecification]]):
+            Characteristics the service can take.
+        serviceSpecRelationship (Optional[List[ServiceSpecRelationship]]):
+            Related service specifications, e.g. migration or dependency.
+        targetEntitySchema (Optional[TargetEntitySchema]): Pointer to the schema
+            defining the target entity.
+
+    Example:
+        >>> spec = ServiceSpecification.from_id("42", context)
+        >>> [c.name for c in spec.specCharacteristic]
+        ['Bandwidth']
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    isBundle: Optional[bool] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    targetEntitySchema: Optional[TargetEntitySchema] = None
+    attachment: Optional[List[Union[Attachment, AttachmentRef]]] = field(
+        default_factory=list
+    )
+    constraint: Optional[List[ConstraintRef]] = field(default_factory=list)
+    entitySpecRelationship: Optional[List[EntitySpecificationRelationship]] = field(
+        default_factory=list
+    )
+    featureSpecification: Optional[List[FeatureSpecification]] = field(
+        default_factory=list
+    )
+    relatedParty: Optional[List[RelatedParty]] = field(default_factory=list)
+    resourceSpecification: Optional[List[ResourceSpecificationRef]] = field(
+        default_factory=list
+    )
+    serviceLevelSpecification: Optional[List[ServiceLevelSpecificationRef]] = field(
+        default_factory=list
+    )
+    serviceSpecRelationship: Optional[List[ServiceSpecRelationship]] = field(
+        default_factory=list
+    )
+    specCharacteristic: Optional[List[CharacteristicSpecification]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}/serviceCatalogManagement/v4/serviceSpecification"
+        )
+
+
+@dataclass(repr=False)
+class ServiceCandidate(Entity, BaseCRUDMixin):
+    """Makes a service specification available through one or more service catalogs."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    category: Optional[List[ServiceCategoryRef]] = field(default_factory=list)
+    serviceSpecification: Optional[ServiceSpecificationRef] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/serviceCatalogManagement/v4/serviceCandidate"
+
+
+@dataclass(repr=False)
+class ServiceCategory(Entity, BaseCRUDMixin):
+    """Logical container grouping service candidates; categories can nest."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    parentId: Optional[str] = None
+    isRoot: Optional[bool] = None
+    validFor: Optional[TimePeriod] = None
+    category: Optional[List[ServiceCategoryRef]] = field(default_factory=list)
+    serviceCandidate: Optional[List[ServiceCandidateRef]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/serviceCatalogManagement/v4/serviceCategory"
+
+
+@dataclass(repr=False)
+class ServiceCatalog(Entity, BaseCRUDMixin):
+    """Root entity for service catalog management.
+
+    A service catalog groups service specifications, made available through
+    service candidates, that an organization offers to its consumers.
+
+    Attributes:
+        name (Optional[str]): Name of the service catalog.
+        lifecycleStatus (Optional[str]): Current lifecycle status, e.g. "Active".
+        category (Optional[List[ServiceCategoryRef]]): Root categories in this catalog.
+        relatedParty (Optional[List[RelatedParty]]): Parties involved in this catalog.
+        validFor (Optional[TimePeriod]): Period the catalog is valid for.
+
+    Example:
+        >>> catalog = ServiceCatalog.from_id("3830", context)
+        >>> [c.name for c in catalog.category]
+        ['Connectivity']
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    category: Optional[List[ServiceCategoryRef]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedParty]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/serviceCatalogManagement/v4/serviceCatalog"
 
 
 @dataclass(repr=False)

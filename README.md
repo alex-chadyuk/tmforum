@@ -77,6 +77,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF679 Product Offering Qualification | `productOfferingQualification/v5` | `CheckProductOfferingQualification`, `QueryProductOfferingQualification` |
 | TMF699 Sales Management | `salesManagement/v5` | `SalesLead`, `SalesOpportunity` |
 | TMF723 Policy Management | `policyManagement/v5` | `PolicyDomain`, `ManagedPolicy`, `ManagedPolicyVariable`, `PolicyCatalog` |
+| TMF633 Service Catalog | `serviceCatalogManagement/v4` | `ServiceCatalog`, `ServiceCategory`, `ServiceCandidate`, `ServiceSpecification` |
 | TMF638 Service Inventory | `serviceInventory/v5` | `Service` |
 | TMF639 Resource Inventory | `resourceInventory/v5` | `Resource` |
 | TMF634 Resource Catalog | `resourceCatalog/v5` | `ResourceCatalog`, `ResourceCategory`, `ResourceCandidate`, `ResourceSpecification`, `PhysicalResourceSpecification`, `LogicalResourceSpecification`, `ResourceFunctionSpecification`, `ImportJob`, `ExportJob` |

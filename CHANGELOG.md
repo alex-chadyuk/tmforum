@@ -4,6 +4,53 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.6.0 — 2026-08-28
+
+Source spec: TMF632 Party Management v5.0.0.
+
+Both REST resources of TMF632 (`Individual`, `Organization`) were already present and
+complete; this release fills in the sub-entities beneath them and replaces the
+`NotImplementedError` stubs for the party-role subtypes.
+
+### Added
+
+- `Disability` — `disabilityCode`, `disabilityName`, `validFor`.
+- `LanguageAbility` — `languageCode`, `languageName`, `isFavouriteLanguage`, and the
+  `writingProficiency` / `readingProficiency` / `speakingProficiency` /
+  `listeningProficiency` scores, plus `validFor`.
+- `Skill` — `skillCode`, `skillName`, `evaluatedLevel`, `comment`, `validFor`.
+- `OtherNameIndividual` — the individual counterpart to the existing
+  `OtherNameOrganization`: `title`, `aristocraticTitle`, `generation`, `givenName`,
+  `preferredGivenName`, `familyNamePrefix`, `familyName`, `legalName`, `middleName`,
+  `fullName`, `formattedName`, `validFor`.
+- `IndividualIdentification` — `identificationId`, `identificationType`,
+  `issuingAuthority`, `issuingDate`, `validFor`, and `attachment` typed as the spec's
+  `AttachmentRefOrValue` union (`Union[Attachment, AttachmentRef]`).
+- `CreditProfile` — `creditProfileDate`, `creditRiskRating`, `creditScore`, `validFor`.
+  Distinct from the pre-existing `PartyCreditProfile`, which the spec keeps separate.
+- `PartyRoleSpecificationRef` — reference to a party role specification.
+- Characteristic subtypes: `ObjectCharacteristic` plus the array-valued
+  `BooleanArrayCharacteristic`, `IntegerArrayCharacteristic`, `NumberArrayCharacteristic`,
+  `ObjectArrayCharacteristic`, and `StringArrayCharacteristic`.
+- `tests/test_party.py` covering `Individual`, `Organization`, and the party-role
+  subtypes: nested-type sweeps, `@type` round-trips, list validation, and resource paths.
+
+### Changed
+
+- `Consumer`, `Producer`, `BusinessPartner`, and `Supplier` are now real subclasses of
+  `PartyRole` instead of stubs raising `NotImplementedError`. This matches the spec, where
+  all four derive from `PartyRole` and add no fields of their own. **Breaking for anyone
+  relying on their previous bases** — `Consumer` and `Producer` derived from `Party`, and
+  `BusinessPartner` and `Supplier` from `Entity`. All four now inherit `PartyRole`'s fields
+  and its `partyRoleManagement/v5/partyRole` resource path.
+- `Individual`: `disability`, `skill`, `languageAbility`, `individualIdentification`, and
+  `otherName` were typed `List[dict]` and are now typed to their proper entity classes, so
+  `from_dict` deserializes them instead of leaving raw dicts.
+- `PartyRole`: added `agreement` (`List[AgreementRef]`), `creditProfile`
+  (`List[CreditProfile]`), and `partyRoleSpecification` (`PartyRoleSpecificationRef`).
+- `Characteristic`: added `valueType` on the base class, where the spec declares it. The
+  scalar subtypes continue to pin it to their own constant.
+
 ## 0.5.0 — 2026-08-28
 
 Source spec: TMF634 Resource Catalog Management v5.0.0.

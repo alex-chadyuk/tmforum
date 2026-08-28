@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 
 @dataclass
@@ -1477,6 +1477,11 @@ class PartyRoleRef(EntityRef):
 
 
 @dataclass(repr=False)
+class PartyRoleSpecificationRef(EntityRef):
+    _referred_type: str = "PartyRoleSpecification"
+
+
+@dataclass(repr=False)
 class PaymentRef(EntityRef):
     _referred_type: str = "Payment"
 
@@ -1707,6 +1712,7 @@ class CharacteristicRelationship(Entity):
 class Characteristic(Entity):
     id: Optional[str] = None
     name: Optional[str] = None
+    valueType: Optional[str] = None
     characteristicRelationship: Optional[List[CharacteristicRelationship]] = field(
         default_factory=list
     )
@@ -1744,6 +1750,42 @@ class NumberCharacteristic(Characteristic):
 class StringCharacteristic(Characteristic):
     value: Optional[str] = None
     valueType: str = "String"
+
+
+@dataclass(repr=False)
+class ObjectCharacteristic(Characteristic):
+    value: Optional[dict] = None
+    valueType: str = "Object"
+
+
+@dataclass(repr=False)
+class BooleanArrayCharacteristic(Characteristic):
+    value: Optional[List[bool]] = field(default_factory=list)
+    valueType: str = "BooleanArray"
+
+
+@dataclass(repr=False)
+class IntegerArrayCharacteristic(Characteristic):
+    value: Optional[List[int]] = field(default_factory=list)
+    valueType: str = "IntegerArray"
+
+
+@dataclass(repr=False)
+class NumberArrayCharacteristic(Characteristic):
+    value: Optional[List[float]] = field(default_factory=list)
+    valueType: str = "NumberArray"
+
+
+@dataclass(repr=False)
+class ObjectArrayCharacteristic(Characteristic):
+    value: Optional[List[dict]] = field(default_factory=list)
+    valueType: str = "ObjectArray"
+
+
+@dataclass(repr=False)
+class StringArrayCharacteristic(Characteristic):
+    value: Optional[List[str]] = field(default_factory=list)
+    valueType: str = "StringArray"
 
 
 ############
@@ -2552,6 +2594,14 @@ class ExternalIdentifier(Entity):
 
 
 @dataclass(repr=False)
+class CreditProfile(Entity):
+    creditProfileDate: Optional[str] = None
+    creditRiskRating: Optional[int] = None
+    creditScore: Optional[int] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
 class PartyRole(Entity, BaseCRUDMixin):
     description: Optional[str] = None
     href: Optional[str] = None
@@ -2567,6 +2617,9 @@ class PartyRole(Entity, BaseCRUDMixin):
     account: Optional[List[AccountRef]] = field(default_factory=list)
     paymentMethod: Optional[List[PaymentMethodRef]] = field(default_factory=list)
     characteristic: Optional[List[Characteristic]] = field(default_factory=list)
+    agreement: Optional[List[AgreementRef]] = field(default_factory=list)
+    creditProfile: Optional[List[CreditProfile]] = field(default_factory=list)
+    partyRoleSpecification: Optional[PartyRoleSpecificationRef] = None
 
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
@@ -2697,15 +2750,67 @@ class Organization(Party, BaseCRUDMixin):
 
 
 @dataclass(repr=False)
-class Consumer(Party):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+class Consumer(PartyRole):
+    pass
 
 
 @dataclass(repr=False)
-class Producer(Party):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+class Producer(PartyRole):
+    pass
+
+
+@dataclass(repr=False)
+class Disability(Entity):
+    disabilityCode: Optional[str] = None
+    disabilityName: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class LanguageAbility(Entity):
+    languageCode: Optional[str] = None
+    languageName: Optional[str] = None
+    isFavouriteLanguage: Optional[bool] = None
+    writingProficiency: Optional[str] = None
+    readingProficiency: Optional[str] = None
+    speakingProficiency: Optional[str] = None
+    listeningProficiency: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class Skill(Entity):
+    skillCode: Optional[str] = None
+    skillName: Optional[str] = None
+    evaluatedLevel: Optional[str] = None
+    comment: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class OtherNameIndividual(Entity):
+    title: Optional[str] = None
+    aristocraticTitle: Optional[str] = None
+    generation: Optional[str] = None
+    givenName: Optional[str] = None
+    preferredGivenName: Optional[str] = None
+    familyNamePrefix: Optional[str] = None
+    familyName: Optional[str] = None
+    legalName: Optional[str] = None
+    middleName: Optional[str] = None
+    fullName: Optional[str] = None
+    formattedName: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class IndividualIdentification(Entity):
+    identificationId: Optional[str] = None
+    identificationType: Optional[str] = None
+    issuingAuthority: Optional[str] = None
+    issuingDate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    attachment: Optional[Union[Attachment, AttachmentRef]] = None
 
 
 @dataclass(repr=False)
@@ -2738,11 +2843,11 @@ class Individual(Party, BaseCRUDMixin):
         placeOfBirth (Optional[str]): A location representing where the individual was born.
         preferredGivenName (Optional[str]): The individual's preferred first name if different from their official name.
         title (Optional[str]): A prefix title (e.g., "Mr.", "Ms.", "Dr.").
-        disability (Optional[List[dict]]): A list describing any disability classifications.
-        skill (Optional[List[dict]]): A list of skills the individual holds.
-        languageAbility (Optional[List[dict]]): A list describing language proficiencies.
-        individualIdentification (Optional[List[dict]]): Various forms of identification (e.g., passport, driver’s license).
-        otherName (Optional[List[dict]]): Any additional or alternative names the individual may go by.
+        disability (Optional[List[Disability]]): A list describing any disability classifications.
+        skill (Optional[List[Skill]]): A list of skills the individual holds.
+        languageAbility (Optional[List[LanguageAbility]]): A list describing language proficiencies.
+        individualIdentification (Optional[List[IndividualIdentification]]): Various forms of identification (e.g., passport, driver’s license).
+        otherName (Optional[List[OtherNameIndividual]]): Any additional or alternative names the individual may go by.
 
     Methods:
         get_resource_path(context: Context) -> str:
@@ -2780,11 +2885,13 @@ class Individual(Party, BaseCRUDMixin):
     placeOfBirth: Optional[str] = None
     preferredGivenName: Optional[str] = None
     title: Optional[str] = None
-    disability: Optional[List[dict]] = field(default_factory=list)
-    skill: Optional[List[dict]] = field(default_factory=list)
-    languageAbility: Optional[List[dict]] = field(default_factory=list)
-    individualIdentification: Optional[List[dict]] = field(default_factory=list)
-    otherName: Optional[List[dict]] = field(default_factory=list)
+    disability: Optional[List[Disability]] = field(default_factory=list)
+    skill: Optional[List[Skill]] = field(default_factory=list)
+    languageAbility: Optional[List[LanguageAbility]] = field(default_factory=list)
+    individualIdentification: Optional[List[IndividualIdentification]] = field(
+        default_factory=list
+    )
+    otherName: Optional[List[OtherNameIndividual]] = field(default_factory=list)
 
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
@@ -2792,15 +2899,13 @@ class Individual(Party, BaseCRUDMixin):
 
 
 @dataclass(repr=False)
-class BusinessPartner(Entity):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+class BusinessPartner(PartyRole):
+    pass
 
 
 @dataclass(repr=False)
-class Supplier(Entity):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+class Supplier(PartyRole):
+    pass
 
 
 @dataclass(repr=False)

@@ -4,6 +4,33 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.3.0 — 2026-08-28
+
+Source spec: TMF699 Sales Management v5.0.0.
+
+### Added
+
+- New CRUD resource `SalesOpportunity` (`salesManagement/v5/salesOpportunity`), covering
+  `name`, `description`, `creationDate`, `referredDate`, `rating`, `salesOpportunityType`,
+  `status`, `statusChangeDate`, `statusChangeReason`, `priority`, `validFor`, `category`,
+  `channel`, `marketSegment`, `marketingCampaign`, `salesLead`, `revenueEstimate`, `note`,
+  `agreement`, `relatedParty`, `quote`, `salesProject` and `salesOpportunityItem`.
+- New entity: `SalesOpportunityItem` (`id`, `action`, `rating`, `priority`,
+  `salesOpportunityItemStatus`, `validFor`, `product`, `productOffering`, `revenueEstimate`,
+  `salesActivity`, `quoteItem`, `note`, `relatedParty`).
+- New reference classes: `SalesActivityRef`, `SalesProjectRef`.
+- New enums: `SalesOpportunityStateType`, `SalesOpportunityItemStateType`.
+- `SalesOpportunity` test coverage in `tests/test_sales.py`.
+
+### Notes
+
+- The spec's `SalesPriorityType` maps to the existing `SalesLeadPriorityType` enum
+  (identical members `low`/`medium`/`high`); no duplicate enum was introduced.
+- No existing classes were modified — every entity in `SalesOpportunity`'s dependency tree
+  (`RevenueEstimate`, `Note`, `QuoteRef`, `QuoteItemRef`, `RelatedPartyRefOrPartyRoleRef`,
+  `CategoryRef`, `ChannelRef`, `MarketSegmentRef`, `MarketingCampaignRef`, `AgreementRef`,
+  `ProductRef`, `ProductOfferingRef`, `SalesLeadRef`) was already field-complete.
+
 ## 0.2.0 — 2026-08-27
 
 Source spec: TMF699 Sales Management v5.0.0.

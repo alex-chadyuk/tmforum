@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 @dataclass
@@ -1192,6 +1192,26 @@ class SalesLeadStatusType(enum.Enum):
 
 
 @enum.unique
+class SalesOpportunityItemStateType(enum.Enum):
+    ACCEPTED = "accepted"
+    ACKNOWLEDGED = "acknowledged"
+    CANCELLED = "cancelled"
+    IN_PROGRESS = "inProgress"
+    PENDING = "pending"
+    REJECTED = "rejected"
+
+
+@enum.unique
+class SalesOpportunityStateType(enum.Enum):
+    ACCEPTED = "accepted"
+    ACKNOWLEDGED = "acknowledged"
+    CANCELLED = "cancelled"
+    IN_PROGRESS = "inProgress"
+    PENDING = "pending"
+    REJECTED = "rejected"
+
+
+@enum.unique
 class ServiceOperatingStatusType(enum.Enum):
     CONFIGURED = "configured"
     RUNNING = "running"
@@ -1584,6 +1604,11 @@ class ResourceSpecificationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class SalesActivityRef(EntityRef):
+    _referred_type: Optional[str] = "SalesActivity"
+
+
+@dataclass(repr=False)
 class SalesLeadRef(EntityRef):
     _referred_type: Optional[str] = "SalesLead"
 
@@ -1591,6 +1616,11 @@ class SalesLeadRef(EntityRef):
 @dataclass(repr=False)
 class SalesOpportunityRef(EntityRef):
     _referred_type: Optional[str] = "SalesOpportunity"
+
+
+@dataclass(repr=False)
+class SalesProjectRef(EntityRef):
+    _referred_type: Optional[str] = "SalesProject"
 
 
 @dataclass(repr=False)
@@ -2793,6 +2823,72 @@ class SalesLead(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/salesManagement/v5/salesLead"
+
+
+@dataclass(repr=False)
+class SalesOpportunityItem(Entity):
+    id: Optional[str] = None
+    action: Optional[str] = None
+    rating: Optional[str] = None
+    priority: Optional[SalesLeadPriorityType] = None
+    salesOpportunityItemStatus: Optional[SalesOpportunityItemStateType] = None
+    validFor: Optional[TimePeriod] = None
+    product: Optional[ProductRef] = None
+    productOffering: Optional[ProductOfferingRef] = None
+    revenueEstimate: Optional[List[RevenueEstimate]] = field(default_factory=list)
+    salesActivity: Optional[List[SalesActivityRef]] = field(default_factory=list)
+    quoteItem: Optional[List[QuoteItemRef]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(repr=False)
+class SalesOpportunity(Entity, BaseCRUDMixin):
+    """
+    Represents a SalesOpportunity entity in the TM Forum TMF699 Sales Management API.
+
+    A SalesOpportunity is a qualified potential for a sale, created when a prospect
+    demonstrates a concrete and actionable interest. As a formal entry in the sales
+    pipeline it is tracked with an estimated value, a timeline and a probability of
+    success, and its lifecycle is managed through defined sales stages until it is
+    won or lost.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    creationDate: Optional[str] = None
+    referredDate: Optional[str] = None
+    rating: Optional[str] = None
+    salesOpportunityType: Optional[str] = None
+    status: Optional[SalesOpportunityStateType] = None
+    statusChangeDate: Optional[str] = None
+    statusChangeReason: Optional[str] = None
+    priority: Optional[SalesLeadPriorityType] = None
+    validFor: Optional[TimePeriod] = None
+    category: Optional[CategoryRef] = None
+    channel: Optional[ChannelRef] = None
+    marketSegment: Optional[MarketSegmentRef] = None
+    marketingCampaign: Optional[MarketingCampaignRef] = None
+    salesLead: Optional[List[SalesLeadRef]] = field(default_factory=list)
+    revenueEstimate: Optional[List[RevenueEstimate]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    agreement: Optional[List[AgreementRef]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    quote: Optional[List[QuoteRef]] = field(default_factory=list)
+    salesProject: Optional[List[SalesProjectRef]] = field(default_factory=list)
+    salesOpportunityItem: Optional[List[SalesOpportunityItem]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/salesManagement/v5/salesOpportunity"
 
 
 @dataclass(repr=False)

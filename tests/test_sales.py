@@ -11,18 +11,28 @@ from tmforum import (
     MarketingCampaignRef,
     MarketSegmentRef,
     Money,
+    Note,
     PartyRoleRef,
     PhoneContactMedium,
     ProductOfferingRef,
     ProductRef,
     ProductSpecificationRef,
+    QuoteItemRef,
+    QuoteRef,
     RelatedPartyRefOrPartyRoleRef,
     RevenueEstimate,
+    SalesActivityRef,
     SalesLead,
     SalesLeadPriorityType,
+    SalesLeadRef,
     SalesLeadStatusType,
     SalesNote,
+    SalesOpportunity,
+    SalesOpportunityItem,
+    SalesOpportunityItemStateType,
     SalesOpportunityRef,
+    SalesOpportunityStateType,
+    SalesProjectRef,
     SocialContactMedium,
     TimePeriod,
 )
@@ -269,3 +279,276 @@ def test_revenue_estimate_to_dict():
     estimate_dict = estimate.to_dict()
     assert estimate_dict["@type"] == "RevenueEstimate"
     assert estimate_dict["amount"]["value"] == 100.0
+
+
+@pytest.fixture
+def sales_opportunity_dict():
+    sales_opportunity = {
+        "@type": "SalesOpportunity",
+        "@baseType": "Entity",
+        "id": "opp-4711",
+        "href": "/salesManagement/v5/salesOpportunity/opp-4711",
+        "name": "Fiber upgrade for ACME",
+        "description": "Qualified interest in upgrading 40 sites to fiber",
+        "creationDate": "2025-08-01T09:00:00Z",
+        "referredDate": "2025-07-17T00:00:00Z",
+        "rating": "hot",
+        "salesOpportunityType": "upsell",
+        "status": "inProgress",
+        "statusChangeDate": "2025-08-05T11:30:00Z",
+        "statusChangeReason": "Technical validation completed",
+        "priority": "high",
+        "validFor": {
+            "startDateTime": "2025-08-01T00:00:00Z",
+            "endDateTime": "2026-01-31T00:00:00Z",
+        },
+        "category": {
+            "@type": "CategoryRef",
+            "id": "cat-01",
+            "name": "Connectivity",
+        },
+        "channel": {
+            "@type": "ChannelRef",
+            "id": "chan-02",
+            "name": "Direct Sales",
+        },
+        "marketSegment": {
+            "@type": "MarketSegmentRef",
+            "id": "seg-01",
+            "name": "Small and Medium Companies",
+        },
+        "marketingCampaign": {
+            "@type": "MarketingCampaignRef",
+            "id": "camp-01",
+            "name": "Fiber Spring Campaign",
+        },
+        "salesLead": [
+            {
+                "@type": "SalesLeadRef",
+                "id": "5411-fe45",
+                "name": "New services opportunity",
+            }
+        ],
+        "revenueEstimate": [
+            {
+                "@type": "RevenueEstimate",
+                "@baseType": "Entity",
+                "description": "Consolidated annual recurring revenue",
+                "revenueType": "recurring",
+                "amount": {
+                    "@type": "Money",
+                    "unit": "USD",
+                    "value": 58000.0,
+                },
+            }
+        ],
+        "note": [
+            {
+                "@type": "Note",
+                "id": "note-01",
+                "author": "Jane Salesperson",
+                "date": "2025-08-05T11:30:00Z",
+                "text": "Customer confirmed budget for Q4",
+            }
+        ],
+        "agreement": [
+            {
+                "@type": "AgreementRef",
+                "id": "agr-01",
+                "name": "Master Service Agreement",
+            }
+        ],
+        "relatedParty": [
+            {
+                "@type": "RelatedPartyRefOrPartyRoleRef",
+                "role": "customer",
+                "partyOrPartyRole": {
+                    "@type": "PartyRoleRef",
+                    "@referredType": "PartyRole",
+                    "id": "pr-01",
+                    "name": "ACME Corp",
+                },
+            }
+        ],
+        "quote": [
+            {
+                "@type": "QuoteRef",
+                "id": "quote-01",
+                "name": "Fiber upgrade quote",
+            }
+        ],
+        "salesProject": [
+            {
+                "@type": "SalesProjectRef",
+                "id": "proj-01",
+                "name": "ACME nationwide fiber rollout",
+            }
+        ],
+        "salesOpportunityItem": [
+            {
+                "@type": "SalesOpportunityItem",
+                "id": "1",
+                "action": "add",
+                "rating": "hot",
+                "priority": "medium",
+                "salesOpportunityItemStatus": "pending",
+                "validFor": {
+                    "startDateTime": "2025-08-01T00:00:00Z",
+                    "endDateTime": "2026-01-31T00:00:00Z",
+                },
+                "product": {
+                    "@type": "ProductRef",
+                    "id": "prod-01",
+                    "name": "Existing Copper Line",
+                },
+                "productOffering": {
+                    "@type": "ProductOfferingRef",
+                    "id": "po-01",
+                    "name": "Fiber 1G",
+                    "version": "2.0",
+                },
+                "revenueEstimate": [
+                    {
+                        "@type": "RevenueEstimate",
+                        "description": "Item level recurring revenue",
+                        "revenueType": "recurring",
+                        "amount": {
+                            "@type": "Money",
+                            "unit": "USD",
+                            "value": 1450.0,
+                        },
+                    }
+                ],
+                "salesActivity": [
+                    {
+                        "@type": "SalesActivityRef",
+                        "id": "act-01",
+                        "name": "Site survey",
+                    }
+                ],
+                "quoteItem": [
+                    {
+                        "@type": "QuoteItemRef",
+                        "quoteId": "quote-01",
+                        "quoteItemId": "1",
+                        "quoteHref": "/quoteManagement/v5/quote/quote-01",
+                    }
+                ],
+                "note": [
+                    {
+                        "@type": "Note",
+                        "id": "note-02",
+                        "author": "Jane Salesperson",
+                        "text": "40 sites in scope",
+                    }
+                ],
+                "relatedParty": [
+                    {
+                        "@type": "RelatedPartyRefOrPartyRoleRef",
+                        "role": "salesAgent",
+                        "partyOrPartyRole": {
+                            "@type": "PartyRoleRef",
+                            "id": "pr-02",
+                            "name": "Jane Salesperson",
+                        },
+                    }
+                ],
+            }
+        ],
+    }
+    return sales_opportunity
+
+
+@pytest.fixture
+def sales_opportunity_1(sales_opportunity_dict):
+    return SalesOpportunity.from_dict(sales_opportunity_dict)
+
+
+def test_sales_opportunity_instantiates_with_id(sales_opportunity_dict):
+    sales_opportunity = SalesOpportunity.from_dict(sales_opportunity_dict)
+    assert sales_opportunity.id == "opp-4711"
+    assert sales_opportunity.name == "Fiber upgrade for ACME"
+    assert sales_opportunity.salesOpportunityType == "upsell"
+    assert sales_opportunity.statusChangeReason == "Technical validation completed"
+    assert sales_opportunity.revenueEstimate[0].amount.value == 58000.0
+
+
+def test_sales_opportunity_instantiates_classes(sales_opportunity_1):
+    revenue_estimate = sales_opportunity_1.revenueEstimate[0]
+    related_party = sales_opportunity_1.relatedParty[0]
+    assert isinstance(sales_opportunity_1.status, SalesOpportunityStateType)
+    assert isinstance(sales_opportunity_1.priority, SalesLeadPriorityType)
+    assert isinstance(sales_opportunity_1.validFor, TimePeriod)
+    assert isinstance(revenue_estimate, RevenueEstimate)
+    assert isinstance(revenue_estimate.amount, Money)
+    assert isinstance(sales_opportunity_1.category, CategoryRef)
+    assert isinstance(sales_opportunity_1.channel, ChannelRef)
+    assert isinstance(sales_opportunity_1.marketSegment, MarketSegmentRef)
+    assert isinstance(sales_opportunity_1.marketingCampaign, MarketingCampaignRef)
+    assert isinstance(sales_opportunity_1.salesLead[0], SalesLeadRef)
+    assert isinstance(sales_opportunity_1.agreement[0], AgreementRef)
+    assert isinstance(sales_opportunity_1.quote[0], QuoteRef)
+    assert isinstance(sales_opportunity_1.salesProject[0], SalesProjectRef)
+    assert isinstance(sales_opportunity_1.note[0], Note)
+    assert isinstance(related_party, RelatedPartyRefOrPartyRoleRef)
+    assert isinstance(related_party.partyOrPartyRole, PartyRoleRef)
+
+
+def test_sales_opportunity_item_instantiates_classes(sales_opportunity_1):
+    item = sales_opportunity_1.salesOpportunityItem[0]
+    assert isinstance(item, SalesOpportunityItem)
+    assert item.id == "1"
+    assert item.action == "add"
+    assert isinstance(item.salesOpportunityItemStatus, SalesOpportunityItemStateType)
+    assert isinstance(item.priority, SalesLeadPriorityType)
+    assert isinstance(item.validFor, TimePeriod)
+    assert isinstance(item.product, ProductRef)
+    assert isinstance(item.productOffering, ProductOfferingRef)
+    assert item.productOffering.version == "2.0"
+    assert isinstance(item.revenueEstimate[0], RevenueEstimate)
+    assert isinstance(item.revenueEstimate[0].amount, Money)
+    assert isinstance(item.salesActivity[0], SalesActivityRef)
+    assert isinstance(item.quoteItem[0], QuoteItemRef)
+    assert item.quoteItem[0].quoteItemId == "1"
+    assert isinstance(item.note[0], Note)
+    assert isinstance(item.relatedParty[0], RelatedPartyRefOrPartyRoleRef)
+    assert isinstance(item.relatedParty[0].partyOrPartyRole, PartyRoleRef)
+
+
+def test_sales_opportunity_to_dict_round_trip(sales_opportunity_1):
+    sales_opportunity_dict = sales_opportunity_1.to_dict()
+    assert sales_opportunity_dict["@type"] == "SalesOpportunity"
+    # SalesOpportunity derives directly from Entity, so no @baseType is emitted.
+    assert "@baseType" not in sales_opportunity_dict
+    assert sales_opportunity_dict["salesLead"][0]["@type"] == "SalesLeadRef"
+    assert sales_opportunity_dict["quote"][0]["@type"] == "QuoteRef"
+    assert sales_opportunity_dict["salesProject"][0]["@type"] == "SalesProjectRef"
+    assert sales_opportunity_dict["revenueEstimate"][0]["@type"] == "RevenueEstimate"
+    assert sales_opportunity_dict["status"] == "inProgress"
+    assert sales_opportunity_dict["priority"] == "high"
+    item_dict = sales_opportunity_dict["salesOpportunityItem"][0]
+    assert item_dict["@type"] == "SalesOpportunityItem"
+    assert item_dict["salesOpportunityItemStatus"] == "pending"
+    assert item_dict["salesActivity"][0]["@type"] == "SalesActivityRef"
+    assert item_dict["quoteItem"][0]["@type"] == "QuoteItemRef"
+
+
+def test_sales_opportunity_raises_when_item_not_a_list():
+    with pytest.raises(ValueError):
+        SalesOpportunity(
+            name="Bad opportunity",
+            salesOpportunityItem=SalesOpportunityItem(id="1"),
+        )
+
+
+def test_sales_opportunity_item_raises_when_note_not_a_list():
+    with pytest.raises(ValueError):
+        SalesOpportunityItem(id="1", note=Note(id="note-01"))
+
+
+def test_sales_opportunity_resource_path_is_v5():
+    context = Context(api_base_url="https://mycsp.com/tmf-api")
+    assert (
+        SalesOpportunity.get_resource_path(context)
+        == "https://mycsp.com/tmf-api/salesManagement/v5/salesOpportunity"
+    )

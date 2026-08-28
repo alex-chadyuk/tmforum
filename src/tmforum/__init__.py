@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 
 @dataclass
@@ -694,6 +694,14 @@ class IndividualStateType(enum.Enum):
 class InitialProductOrderStateType(enum.Enum):
     ACKNOWLEDGED = "acknowledged"
     DRAFT = "draft"
+
+
+@enum.unique
+class JobStateType(enum.Enum):
+    NOT_STARTED = "Not Started"
+    RUNNING = "Running"
+    SUCCEEDED = "Succeeded"
+    FAILED = "Failed"
 
 
 @enum.unique
@@ -1616,6 +1624,13 @@ class RelatedOrderItem(EntityRef):
 @dataclass(repr=False)
 class ResourceCandidateRef(EntityRef):
     _referred_type: Optional[str] = "ResourceCandidate"
+    version: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ResourceCategoryRef(EntityRef):
+    _referred_type: Optional[str] = "ResourceCategory"
+    version: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -4734,6 +4749,139 @@ class ResourcePoolSpecification(LogicalResourceSpecification):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/resourcePool/v5/resourcePoolSpecification"
+
+
+@dataclass(repr=False)
+class ResourceCategory(Entity, BaseCRUDMixin):
+    """Logical container grouping resource candidates; categories can nest."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    parentId: Optional[str] = None
+    isRoot: Optional[bool] = None
+    validFor: Optional[TimePeriod] = None
+    category: Optional[List[ResourceCategoryRef]] = field(default_factory=list)
+    resourceSpecification: Optional[List[ResourceSpecificationRef]] = field(
+        default_factory=list
+    )
+    resourceCandidate: Optional[List[ResourceCandidateRef]] = field(
+        default_factory=list
+    )
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/resourceCatalog/v5/resourceCategory"
+
+
+@dataclass(repr=False)
+class ResourceCandidate(Entity, BaseCRUDMixin):
+    """Makes a resource specification available through one or more resource catalogs."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    category: Optional[List[ResourceCategoryRef]] = field(default_factory=list)
+    resourceSpecification: Optional[ResourceSpecificationRef] = None
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/resourceCatalog/v5/resourceCandidate"
+
+
+@dataclass(repr=False)
+class ResourceCatalog(Entity, BaseCRUDMixin):
+    """Root entity for resource catalog management.
+
+    A resource catalog groups resource specifications, made available through
+    resource candidates, that an organization offers to its consumers.
+
+    Attributes:
+        name (Optional[str]): Name of the catalog.
+        catalogType (Optional[str]): Type of catalog, e.g. "Resource".
+        lifecycleStatus (Optional[str]): Current lifecycle status, e.g. "Active".
+        category (Optional[List[ResourceCategoryRef]]): Root categories in this catalog.
+        relatedParty (Optional[List[RelatedPartyRefOrPartyRoleRef]]): Parties involved
+            in this catalog.
+        validFor (Optional[TimePeriod]): Period the catalog is valid for.
+
+    Example:
+        >>> catalog = ResourceCatalog.from_id("5574", context)
+        >>> [c.name for c in catalog.category]
+        ['Secure Home']
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    catalogType: Optional[str] = None
+    version: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    category: Optional[List[ResourceCategoryRef]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/resourceCatalog/v5/resourceCatalog"
+
+
+@dataclass(repr=False)
+class ImportJob(Entity, BaseCRUDMixin):
+    """Batch task importing resources from a file into the catalog."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    contentType: Optional[str] = None
+    creationDate: Optional[str] = None
+    completionDate: Optional[str] = None
+    errorLog: Optional[str] = None
+    path: Optional[str] = None
+    url: Optional[str] = None
+    status: Optional[JobStateType] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/resourceCatalog/v5/importJob"
+
+
+@dataclass(repr=False)
+class ExportJob(Entity, BaseCRUDMixin):
+    """Batch task exporting catalog resources to a file."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    contentType: Optional[str] = None
+    creationDate: Optional[str] = None
+    completionDate: Optional[str] = None
+    errorLog: Optional[str] = None
+    path: Optional[str] = None
+    query: Optional[str] = None
+    url: Optional[str] = None
+    status: Optional[JobStateType] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/resourceCatalog/v5/exportJob"
 
 
 @dataclass(repr=False)

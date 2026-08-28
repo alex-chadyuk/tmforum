@@ -4,6 +4,46 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.5.0 — 2026-08-28
+
+Source spec: TMF634 Resource Catalog Management v5.0.0.
+
+### Added
+
+- `ResourceCatalog` — the root catalog entity, CRUD-enabled at
+  `resourceCatalog/v5/resourceCatalog`. Fields merged from the spec's `Catalog` parent and
+  `ResourceCatalog` itself: `id`, `href`, `name`, `description`, `catalogType`, `version`,
+  `lifecycleStatus`, `lastUpdate`, `validFor`, `category`, `relatedParty`,
+  `externalIdentifier`.
+- `ResourceCategory` — CRUD-enabled at `resourceCatalog/v5/resourceCategory`; groups
+  candidates and nests via `category` (`parentId`, `isRoot`, `resourceSpecification`,
+  `resourceCandidate`, `relatedParty`, `externalIdentifier`, `validFor`).
+- `ResourceCandidate` — CRUD-enabled at `resourceCatalog/v5/resourceCandidate`; publishes a
+  `ResourceSpecificationRef` into one or more catalogs (`category`, `validFor`,
+  `lifecycleStatus`, `externalIdentifier`).
+- `ImportJob` and `ExportJob` — batch catalog load/extract tasks, CRUD-enabled at
+  `resourceCatalog/v5/importJob` and `resourceCatalog/v5/exportJob` (`contentType`,
+  `creationDate`, `completionDate`, `errorLog`, `path`, `url`, `status`; `ExportJob` also
+  carries `query`).
+- New reference class: `ResourceCategoryRef` (`version`).
+- New enum: `JobStateType` (`Not Started`, `Running`, `Succeeded`, `Failed` — the spec
+  defines these values in Title Case rather than camelCase).
+- Test coverage for all five new resources in `tests/test_resource_catalog.py`.
+
+### Changed
+
+- `ResourceCandidateRef` gains `version`, which the spec defines but the SDK was missing.
+
+### Notes
+
+- `ResourceCandidate.name` is included even though the spec's base schema omits it from
+  `properties`: `ResourceCandidate_FVO` lists it under `required` and every example payload
+  carries it.
+- `lifecycleStatus` is typed `Optional[str]` on all three catalog entities — TMF634 declares
+  it as a plain string, unlike TMF620's enumerated equivalent.
+- The spec's abstract `Catalog` parent is not implemented as its own class; its fields are
+  merged into `ResourceCatalog`, matching how `ProductCatalog` extends `Entity` directly.
+
 ## 0.4.0 — 2026-08-28
 
 Source spec: TMF634 Resource Catalog Management v5.0.0.

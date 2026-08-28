@@ -79,7 +79,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF723 Policy Management | `policyManagement/v5` | `PolicyDomain`, `ManagedPolicy`, `ManagedPolicyVariable`, `PolicyCatalog` |
 | TMF638 Service Inventory | `serviceInventory/v5` | `Service` |
 | TMF639 Resource Inventory | `resourceInventory/v5` | `Resource` |
-| TMF634 Resource Catalog | `resourceCatalog/v5` | `ResourceSpecification`, `PhysicalResourceSpecification`, `LogicalResourceSpecification`, `ResourceFunctionSpecification` |
+| TMF634 Resource Catalog | `resourceCatalog/v5` | `ResourceCatalog`, `ResourceCategory`, `ResourceCandidate`, `ResourceSpecification`, `PhysicalResourceSpecification`, `LogicalResourceSpecification`, `ResourceFunctionSpecification`, `ImportJob`, `ExportJob` |
 | TMF685 Resource Pool | `resourcePool/v5` | `ResourcePool`, `ResourcePoolSpecification`, `CapacitySpecification` |
 | TMF676 Payment | `payment/v4` | `PaymentPlan` |
 | TMF760 Product Configuration | *(entity models only)* | `CheckProductConfiguration.from_order()` |

@@ -9,22 +9,31 @@ from tmforum import (
     ConnectionSpecification,
     Context,
     EndpointSpecificationRef,
+    ExportJob,
     ExternalIdentifier,
     FeatureSpecification,
     FeatureSpecificationRelationship,
+    ImportJob,
     IntentSpecificationRef,
+    JobStateType,
     LogicalResourceSpecification,
     PartyRoleRef,
     PhysicalResourceSpecification,
     PolicyRef,
     Quantity,
     RelatedPartyRefOrPartyRoleRef,
+    ResourceCandidate,
+    ResourceCandidateRef,
+    ResourceCatalog,
+    ResourceCategory,
+    ResourceCategoryRef,
     ResourceFunctionSpecification,
     ResourceGraphSpecification,
     ResourceGraphSpecificationRef,
     ResourceGraphSpecificationRelationship,
     ResourceGraphSpecificationRelationshipType,
     ResourceSpecification,
+    ResourceSpecificationRef,
     ResourceSpecificationRelationship,
     StringCharacteristicValueSpecification,
     TargetResourceSchema,
@@ -508,3 +517,398 @@ def test_connection_specification_raises_when_endpoint_not_a_list():
             name="Bad connection",
             endpointSpecification=EndpointSpecificationRef(id="es-01"),
         )
+
+
+@pytest.fixture
+def resource_catalog_dict():
+    resource_catalog = {
+        "@type": "ResourceCatalog",
+        "@baseType": "Entity",
+        "id": "5574",
+        "href": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceCatalog/5574",
+        "name": "Cloud Resource Catalog",
+        "description": "This resource catalog points to entities in the area of cloud management",
+        "catalogType": "Resource",
+        "version": "1.0",
+        "lifecycleStatus": "Active",
+        "lastUpdate": "2021-08-09T00:00:00.000Z",
+        "validFor": {
+            "startDateTime": "2022-08-10T00:00:00.000Z",
+            "endDateTime": "2023-03-07T00:00:00.000Z",
+        },
+        "category": [
+            {
+                "@type": "ResourceCategoryRef",
+                "@referredType": "ResourceCategory",
+                "id": "8121",
+                "href": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceCategory/8121",
+                "name": "Secure Home",
+                "version": "1.0",
+            }
+        ],
+        "relatedParty": [
+            {
+                "@type": "RelatedPartyRefOrPartyRoleRef",
+                "role": "Supplier",
+                "partyOrPartyRole": {
+                    "@type": "PartyRoleRef",
+                    "@referredType": "Supplier",
+                    "id": "5858",
+                    "href": "https://mycsp.com:8080/tmf-api/partyRole/v5/supplier/5858",
+                    "name": "Gustave Flaubert",
+                },
+            }
+        ],
+        "externalIdentifier": [
+            {
+                "@type": "ExternalIdentifier",
+                "id": "CAT-5574",
+                "owner": "LegacyCatalog",
+                "externalIdentifierType": "ResourceCatalog",
+            }
+        ],
+    }
+    return resource_catalog
+
+
+@pytest.fixture
+def resource_catalog_1(resource_catalog_dict):
+    return ResourceCatalog.from_dict(resource_catalog_dict)
+
+
+def test_resource_catalog_instantiates_classes(resource_catalog_1):
+    assert isinstance(resource_catalog_1, ResourceCatalog)
+    assert resource_catalog_1.name == "Cloud Resource Catalog"
+    assert resource_catalog_1.catalogType == "Resource"
+    assert resource_catalog_1.lifecycleStatus == "Active"
+    assert isinstance(resource_catalog_1.validFor, TimePeriod)
+    category = resource_catalog_1.category[0]
+    assert isinstance(category, ResourceCategoryRef)
+    assert category.version == "1.0"
+    related_party = resource_catalog_1.relatedParty[0]
+    assert isinstance(related_party, RelatedPartyRefOrPartyRoleRef)
+    assert isinstance(related_party.partyOrPartyRole, PartyRoleRef)
+    assert isinstance(resource_catalog_1.externalIdentifier[0], ExternalIdentifier)
+
+
+def test_resource_catalog_to_dict_round_trip(resource_catalog_1):
+    resource_catalog_dict = resource_catalog_1.to_dict()
+    assert resource_catalog_dict["@type"] == "ResourceCatalog"
+    # extends Entity directly, so to_dict emits no @baseType
+    assert "@baseType" not in resource_catalog_dict
+    category_dict = resource_catalog_dict["category"][0]
+    assert category_dict["@type"] == "ResourceCategoryRef"
+    assert category_dict["@referredType"] == "ResourceCategory"
+    party_dict = resource_catalog_dict["relatedParty"][0]["partyOrPartyRole"]
+    assert party_dict["@type"] == "PartyRoleRef"
+    assert party_dict["@referredType"] == "Supplier"
+
+
+def test_resource_catalog_resource_path():
+    context = Context(api_base_url="https://mycsp.com:8080/tmf-api")
+    assert (
+        ResourceCatalog.get_resource_path(context)
+        == "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceCatalog"
+    )
+
+
+def test_resource_catalog_raises_when_category_not_a_list():
+    with pytest.raises(ValueError):
+        ResourceCatalog(
+            name="Bad catalog",
+            category=ResourceCategoryRef(id="8121"),
+        )
+
+
+@pytest.fixture
+def resource_category_dict():
+    resource_category = {
+        "@type": "ResourceCategory",
+        "@baseType": "Entity",
+        "id": "8121",
+        "href": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceCategory/8121",
+        "name": "Cloud Resources",
+        "description": "A category grouping cloud resource candidates",
+        "version": "1.1",
+        "lifecycleStatus": "Active",
+        "lastUpdate": "2021-08-09T00:00:00.000Z",
+        "parentId": "8120",
+        "isRoot": False,
+        "validFor": {"startDateTime": "2022-08-10T00:00:00.000Z"},
+        "category": [
+            {
+                "@type": "ResourceCategoryRef",
+                "@referredType": "ResourceCategory",
+                "id": "8122",
+                "name": "Virtual Storage",
+                "version": "1.0",
+            }
+        ],
+        "resourceSpecification": [
+            {
+                "@type": "ResourceSpecificationRef",
+                "@referredType": "ResourceSpecification",
+                "id": "42",
+                "name": "Virtual Storage Medium",
+                "version": "3.0",
+            }
+        ],
+        "resourceCandidate": [
+            {
+                "@type": "ResourceCandidateRef",
+                "@referredType": "ResourceCandidate",
+                "id": "7479",
+                "name": "Virtual Storage Medium",
+                "version": "2.1",
+            }
+        ],
+        "relatedParty": [
+            {
+                "@type": "RelatedPartyRefOrPartyRoleRef",
+                "role": "Owner",
+                "partyOrPartyRole": {
+                    "@type": "PartyRoleRef",
+                    "@referredType": "Supplier",
+                    "id": "5858",
+                    "name": "Gustave Flaubert",
+                },
+            }
+        ],
+        "externalIdentifier": [
+            {
+                "@type": "ExternalIdentifier",
+                "id": "CTG-8121",
+                "owner": "LegacyCatalog",
+                "externalIdentifierType": "ResourceCategory",
+            }
+        ],
+    }
+    return resource_category
+
+
+@pytest.fixture
+def resource_category_1(resource_category_dict):
+    return ResourceCategory.from_dict(resource_category_dict)
+
+
+def test_resource_category_instantiates_classes(resource_category_1):
+    assert isinstance(resource_category_1, ResourceCategory)
+    assert resource_category_1.parentId == "8120"
+    assert resource_category_1.isRoot is False
+    assert isinstance(resource_category_1.validFor, TimePeriod)
+    assert isinstance(resource_category_1.category[0], ResourceCategoryRef)
+    assert isinstance(
+        resource_category_1.resourceSpecification[0], ResourceSpecificationRef
+    )
+    candidate = resource_category_1.resourceCandidate[0]
+    assert isinstance(candidate, ResourceCandidateRef)
+    assert candidate.version == "2.1"
+    assert isinstance(
+        resource_category_1.relatedParty[0], RelatedPartyRefOrPartyRoleRef
+    )
+    assert isinstance(resource_category_1.externalIdentifier[0], ExternalIdentifier)
+
+
+def test_resource_category_to_dict_round_trip(resource_category_1):
+    resource_category_dict = resource_category_1.to_dict()
+    assert resource_category_dict["@type"] == "ResourceCategory"
+    # extends Entity directly, so to_dict emits no @baseType
+    assert "@baseType" not in resource_category_dict
+    assert resource_category_dict["resourceCandidate"][0]["version"] == "2.1"
+    assert (
+        resource_category_dict["resourceSpecification"][0]["@type"]
+        == "ResourceSpecificationRef"
+    )
+
+
+def test_resource_category_resource_path():
+    context = Context(api_base_url="https://mycsp.com:8080/tmf-api")
+    assert (
+        ResourceCategory.get_resource_path(context)
+        == "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceCategory"
+    )
+
+
+def test_resource_category_raises_when_resource_candidate_not_a_list():
+    with pytest.raises(ValueError):
+        ResourceCategory(
+            name="Bad category",
+            resourceCandidate=ResourceCandidateRef(id="7479"),
+        )
+
+
+@pytest.fixture
+def resource_candidate_dict():
+    resource_candidate = {
+        "@type": "ResourceCandidate",
+        "@baseType": "Entity",
+        "id": "7479",
+        "href": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceCandidate/7479",
+        "name": "Virtual Storage Medium",
+        "description": "This resource candidate makes the virtual storage medium specification available in the cloud catalog",
+        "version": "2.1",
+        "lifecycleStatus": "Active",
+        "lastUpdate": "2017-08-09T00:00:00.000Z",
+        "validFor": {
+            "startDateTime": "2017-08-12T00:00:00.000Z",
+            "endDateTime": "2018-03-07T00:00:00.000Z",
+        },
+        "category": [
+            {
+                "@type": "ResourceCategoryRef",
+                "@referredType": "ResourceCategory",
+                "id": "5355",
+                "href": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceCategory/5355",
+                "name": "Cloud Resources",
+                "version": "1.1",
+            }
+        ],
+        "resourceSpecification": {
+            "@type": "ResourceSpecificationRef",
+            "@referredType": "ResourceSpecification",
+            "id": "42",
+            "href": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceSpecification/42",
+            "name": "Virtual Storage Medium",
+            "version": "3.0",
+        },
+        "externalIdentifier": [
+            {
+                "@type": "ExternalIdentifier",
+                "id": "CND-7479",
+                "owner": "LegacyCatalog",
+                "externalIdentifierType": "ResourceCandidate",
+            }
+        ],
+    }
+    return resource_candidate
+
+
+@pytest.fixture
+def resource_candidate_1(resource_candidate_dict):
+    return ResourceCandidate.from_dict(resource_candidate_dict)
+
+
+def test_resource_candidate_instantiates_classes(resource_candidate_1):
+    assert isinstance(resource_candidate_1, ResourceCandidate)
+    assert resource_candidate_1.name == "Virtual Storage Medium"
+    assert resource_candidate_1.version == "2.1"
+    assert isinstance(resource_candidate_1.validFor, TimePeriod)
+    assert isinstance(resource_candidate_1.category[0], ResourceCategoryRef)
+    specification = resource_candidate_1.resourceSpecification
+    assert isinstance(specification, ResourceSpecificationRef)
+    assert specification.version == "3.0"
+    assert isinstance(resource_candidate_1.externalIdentifier[0], ExternalIdentifier)
+
+
+def test_resource_candidate_to_dict_round_trip(resource_candidate_1):
+    resource_candidate_dict = resource_candidate_1.to_dict()
+    assert resource_candidate_dict["@type"] == "ResourceCandidate"
+    # extends Entity directly, so to_dict emits no @baseType
+    assert "@baseType" not in resource_candidate_dict
+    specification_dict = resource_candidate_dict["resourceSpecification"]
+    assert specification_dict["@type"] == "ResourceSpecificationRef"
+    assert specification_dict["@referredType"] == "ResourceSpecification"
+    assert resource_candidate_dict["category"][0]["version"] == "1.1"
+
+
+def test_resource_candidate_resource_path():
+    context = Context(api_base_url="https://mycsp.com:8080/tmf-api")
+    assert (
+        ResourceCandidate.get_resource_path(context)
+        == "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceCandidate"
+    )
+
+
+@pytest.fixture
+def import_job_dict():
+    import_job = {
+        "@type": "ImportJob",
+        "@baseType": "Entity",
+        "id": "42",
+        "href": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/importJob/42",
+        "contentType": "application/json",
+        "creationDate": "2020-08-27T00:00:00.000Z",
+        "completionDate": "2020-08-27T01:00:00.000Z",
+        "errorLog": "https://mycsp.com:8080/logs/importJob/42",
+        "path": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceSpecification",
+        "url": "https://mycsp.com:8080/files/resourceSpecifications.json",
+        "status": "Succeeded",
+    }
+    return import_job
+
+
+@pytest.fixture
+def import_job_1(import_job_dict):
+    return ImportJob.from_dict(import_job_dict)
+
+
+def test_import_job_instantiates_classes(import_job_1):
+    assert isinstance(import_job_1, ImportJob)
+    assert import_job_1.status is JobStateType.SUCCEEDED
+    assert import_job_1.contentType == "application/json"
+    assert (
+        import_job_1.url == "https://mycsp.com:8080/files/resourceSpecifications.json"
+    )
+
+
+def test_import_job_to_dict_round_trip(import_job_1):
+    import_job_dict = import_job_1.to_dict()
+    assert import_job_dict["@type"] == "ImportJob"
+    # extends Entity directly, so to_dict emits no @baseType
+    assert "@baseType" not in import_job_dict
+    assert import_job_dict["status"] == "Succeeded"
+
+
+def test_import_job_resource_path():
+    context = Context(api_base_url="https://mycsp.com:8080/tmf-api")
+    assert (
+        ImportJob.get_resource_path(context)
+        == "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/importJob"
+    )
+
+
+@pytest.fixture
+def export_job_dict():
+    export_job = {
+        "@type": "ExportJob",
+        "@baseType": "Entity",
+        "id": "45",
+        "href": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/exportJob/45",
+        "contentType": "application/json",
+        "creationDate": "2020-08-27T00:00:00.000Z",
+        "completionDate": "2020-08-27T01:00:00.000Z",
+        "errorLog": "https://mycsp.com:8080/logs/exportJob/45",
+        "path": "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/resourceCandidate",
+        "query": "lifecycleStatus=Active",
+        "url": "https://mycsp.com:8080/files/resourceCandidates.json",
+        "status": "Not Started",
+    }
+    return export_job
+
+
+@pytest.fixture
+def export_job_1(export_job_dict):
+    return ExportJob.from_dict(export_job_dict)
+
+
+def test_export_job_instantiates_classes(export_job_1):
+    assert isinstance(export_job_1, ExportJob)
+    assert export_job_1.status is JobStateType.NOT_STARTED
+    assert export_job_1.query == "lifecycleStatus=Active"
+
+
+def test_export_job_to_dict_round_trip(export_job_1):
+    export_job_dict = export_job_1.to_dict()
+    assert export_job_dict["@type"] == "ExportJob"
+    # extends Entity directly, so to_dict emits no @baseType
+    assert "@baseType" not in export_job_dict
+    assert export_job_dict["status"] == "Not Started"
+    assert export_job_dict["query"] == "lifecycleStatus=Active"
+
+
+def test_export_job_resource_path():
+    context = Context(api_base_url="https://mycsp.com:8080/tmf-api")
+    assert (
+        ExportJob.get_resource_path(context)
+        == "https://mycsp.com:8080/tmf-api/resourceCatalog/v5/exportJob"
+    )

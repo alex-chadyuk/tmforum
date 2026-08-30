@@ -4,6 +4,85 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.9.0 — 2026-08-30
+
+Source spec: TMF641 Service Ordering v4.2.0.
+
+The SDK had no TMF641 coverage at all. This release adds all three of the API's
+REST resources plus the sub-entities, references and enums they depend on. Paths
+follow the spec's `basePath` (`serviceOrdering/v4`).
+
+This is a Swagger 2.0 spec, so there are no `_FVO`/`_MVO` variants; the
+`_Create` / `_Update` variants add no fields over their base schemas — they only
+omit server-assigned ones — so each entity is modelled from the base schema
+alone, in line with the SDK's single-class-plus-`BaseCRUDMixin` pattern.
+`*Event` / `*EventPayload` schemas are not modelled.
+
+`ServiceOrderSpecification` and `ServiceOrderItemSpecification` are each a strict
+superset of the spec's `OrderSpecification` / `OrderItemSpecification`, so the
+generic bases are implemented as classes in their own right and the service
+variants subclass them.
+
+### Added
+
+- `ServiceOrder` — CRUD resource at `serviceOrdering/v4/serviceOrder`: `id`,
+  `href`, `category`, `description`, `externalId`, `notificationContact`,
+  `priority`, `cancellationDate`, `cancellationReason`, `completionDate`,
+  `expectedCompletionDate`, `lastUpdate`, `orderDate`, `requestedCompletionDate`,
+  `requestedStartDate`, `startDate`, `state`, `orderSpecification`,
+  `errorMessage`, `externalReference`, `jeopardyAlert`, `milestone`, `note`,
+  `orderCharacteristic`, `orderRelationship`, `relatedEntity`, `relatedParty`,
+  `serviceOrderItem`.
+- `CancelServiceOrder` — CRUD resource at `serviceOrdering/v4/cancelServiceOrder`:
+  `id`, `href`, `cancellationReason`, `completionMessage`,
+  `effectiveCancellationDate`, `requestedCancellationDate`, `state`,
+  `errorMessage`, `serviceOrder`.
+- `ServiceOrderSpecification` — CRUD resource at
+  `serviceOrdering/v4/serviceOrderSpecification`, subclassing `OrderSpecification`
+  and adding `serviceOrderItemSpecification`.
+- `OrderSpecification` — generic order template: `id`, `href`, `description`,
+  `name`, `lastUpdate`, `lifecycleStatus`, `version`, `isAutoResumeAllowed`,
+  `isAutoUnlockAllowed`, `isBundle`, `isSyncModeEnabled`, `failurePolicy`,
+  `sequencingPolicy`, `targetEntitySchema`, `validFor`, `workflow`, `attachment`,
+  `constraint`, `entitySpecRelationship`, `externalIdentifier`, `relatedParty`,
+  `specCharacteristic`.
+- `OrderItemSpecification` — generic order item template: `id`, `description`,
+  `name`, `attachment`, `constraint`, `orderItemSpecRelationship`,
+  `specCharacteristic`.
+- `ServiceOrderItemSpecification` — subclasses `OrderItemSpecification`, adding
+  `actionType`, `otherAction`, `serviceCategory`, `serviceSpecification`.
+- `ServiceOrderItem` — `id`, `name`, `otherAction`, `quantity`, `action`, `state`,
+  `appointment`, `service`, `errorMessage`, `modifyPath`, `orderItemCharacteristic`,
+  `relatedParty`, `serviceOrderItem` (self-nesting), `serviceOrderItemRelationship`.
+- `ServiceRefOrValue` — a service carried by reference or by value, mirroring
+  `ResourceRefOrValue`.
+- `ServiceOrderMilestone` (subclasses `Milestone`), `ServiceOrderJeopardyAlert`
+  (subclasses `JeopardyAlert`), `ServiceOrderErrorMessage` and
+  `ServiceOrderItemErrorMessage` (both subclass `ErrorMessage`, adding `timestamp`).
+- `ServiceOrderRelationship`, `ServiceOrderItemRelationship`,
+  `OrderItemSpecRelationship`, `ContextUpdate`, `ExternalReference`.
+- `JsonPatch` — `op`, `path`, `value`. RFC 6902's `from` member is not modelled:
+  it is a Python keyword and the serializer maps field names to wire names
+  verbatim. It applies only to `move` / `copy`, which TMF641 payloads do not use.
+- References: `ServiceOrderRef`, `ServiceOrderItemRef`, `EntitySpecificationRef`,
+  `ProcessFlowSpecificationRef`.
+- Enums: `ServiceOrderStateType`, `ServiceOrderItemStateType`,
+  `ServiceOrderItemActionType`, `OrderFailurePolicy`, `OrderSequencingPolicy`.
+  `ServiceOrderItemActionType` carries the `other` member that the existing
+  `OrderItemActionType` / `ItemActionType` lack.
+- `TaskStateType` gains the `accepted` member used by `CancelServiceOrder.state`.
+- `Service` gains `operatingStatusContextUpdate`; `ExternalIdentifier` gains
+  `href`; `Feature` gains `constraint` (distinct from the existing
+  `policyConstraint`).
+
+### Notes
+
+Two spec/SDK divergences are left as they are: `Characteristic.value` and
+`CharacteristicValueSpecification.value` stay on the typed subclasses
+(`StringCharacteristic`, `IntegerCharacteristic`, …), and
+`RelatedEntityRefOrValue` keeps the SDK's `role` + `entity` shape rather than the
+spec's flat `id` / `href` / `name`.
+
 ## 0.8.0 — 2026-08-28
 
 Source spec: TMF652 Resource Order Management v4.0.0.

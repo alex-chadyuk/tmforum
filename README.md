@@ -79,6 +79,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF723 Policy Management | `policyManagement/v5` | `PolicyDomain`, `ManagedPolicy`, `ManagedPolicyVariable`, `PolicyCatalog` |
 | TMF633 Service Catalog | `serviceCatalogManagement/v4` | `ServiceCatalog`, `ServiceCategory`, `ServiceCandidate`, `ServiceSpecification` |
 | TMF638 Service Inventory | `serviceInventory/v5` | `Service` |
+| TMF641 Service Ordering | `serviceOrdering/v4` | `ServiceOrder`, `ServiceOrderItem`, `CancelServiceOrder`, `ServiceOrderSpecification` |
 | TMF639 Resource Inventory | `resourceInventory/v5` | `Resource` |
 | TMF634 Resource Catalog | `resourceCatalog/v5` | `ResourceCatalog`, `ResourceCategory`, `ResourceCandidate`, `ResourceSpecification`, `PhysicalResourceSpecification`, `LogicalResourceSpecification`, `ResourceFunctionSpecification`, `ImportJob`, `ExportJob` |
 | TMF652 Resource Ordering | `resourceOrderingManagement/v4` | `ResourceOrder`, `ResourceOrderItem`, `CancelResourceOrder` |

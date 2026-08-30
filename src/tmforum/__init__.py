@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 
 @dataclass
@@ -744,11 +744,25 @@ class OneTimeFeeAppliesOnEnum(enum.Enum):
 
 
 @enum.unique
+class OrderFailurePolicy(enum.Enum):
+    HALT_AND_ROLLBACK = "HaltAndRollback"
+    HALT = "Halt"
+    CONTINUE = "Continue"
+
+
+@enum.unique
 class OrderItemActionType(enum.Enum):
     ADD = "add"
     MODIFY = "modify"
     DELETE = "delete"
     NO_CHANGE = "noChange"
+
+
+@enum.unique
+class OrderSequencingPolicy(enum.Enum):
+    PARALLEL = "Parallel"
+    SEQUENTIAL = "Sequential"
+    ANY = "Any"
 
 
 @enum.unique
@@ -1246,6 +1260,45 @@ class ServiceOperatingStatusType(enum.Enum):
 
 
 @enum.unique
+class ServiceOrderItemActionType(enum.Enum):
+    ADD = "add"
+    MODIFY = "modify"
+    DELETE = "delete"
+    NO_CHANGE = "noChange"
+    OTHER = "other"
+
+
+@enum.unique
+class ServiceOrderItemStateType(enum.Enum):
+    ACKNOWLEDGED = "acknowledged"
+    REJECTED = "rejected"
+    PENDING = "pending"
+    HELD = "held"
+    IN_PROGRESS = "inProgress"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    ASSESSING_CANCELLATION = "assessingCancellation"
+    PENDING_CANCELLATION = "pendingCancellation"
+    PARTIAL = "partial"
+
+
+@enum.unique
+class ServiceOrderStateType(enum.Enum):
+    ACKNOWLEDGED = "acknowledged"
+    REJECTED = "rejected"
+    PENDING = "pending"
+    HELD = "held"
+    IN_PROGRESS = "inProgress"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    PARTIAL = "partial"
+    ASSESSING_CANCELLATION = "assessingCancellation"
+    PENDING_CANCELLATION = "pendingCancellation"
+
+
+@enum.unique
 class ServiceStateType(enum.Enum):
     INACTIVE = "inactive"
     RESERVED = "reserved"
@@ -1275,6 +1328,7 @@ class StabilityIssueTypeEnum(enum.Enum):
 @enum.unique
 class TaskStateType(enum.Enum):
     ACKNOWLEDGED = "acknowledged"
+    ACCEPTED = "accepted"
     REJECTED = "rejected"
     IN_PROGRESS = "inProgress"
     CANCELLED = "cancelled"
@@ -1431,6 +1485,12 @@ class EndpointSpecificationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class EntitySpecificationRef(EntityRef):
+    _referred_type: str = "EntitySpecification"
+    version: Optional[str] = None
+
+
+@dataclass(repr=False)
 class IntentRef(EntityRef):
     _referred_type: str = "Intent"
 
@@ -1551,6 +1611,11 @@ class PolicyRef(EntityRef):
 @dataclass(repr=False)
 class PolicyVariableRef(EntityRef):
     _referred_type: str = "PolicyVariable"
+
+
+@dataclass(repr=False)
+class ProcessFlowSpecificationRef(EntityRef):
+    _referred_type: str = "ProcessFlowSpecification"
 
 
 @dataclass(repr=False)
@@ -1713,6 +1778,19 @@ class ServiceCategoryRef(EntityRef):
 @dataclass(repr=False)
 class ServiceLevelSpecificationRef(EntityRef):
     _referred_type: Optional[str] = "ServiceLevelSpecification"
+
+
+@dataclass(repr=False)
+class ServiceOrderItemRef(EntityRef):
+    _referred_type: Optional[str] = "ServiceOrderItem"
+    itemId: Optional[str] = None
+    serviceOrderHref: Optional[str] = None
+    serviceOrderId: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ServiceOrderRef(EntityRef):
+    _referred_type: Optional[str] = "ServiceOrder"
 
 
 @dataclass(repr=False)
@@ -2631,6 +2709,7 @@ class ProductTerm(Entity):
 @dataclass(repr=False)
 class ExternalIdentifier(Entity):
     externalIdentifierType: Optional[str] = None
+    href: Optional[str] = None
     id: Optional[str] = None
     owner: Optional[str] = None
     value: Optional[str] = None
@@ -4597,6 +4676,7 @@ class Feature(Entity):
     isBundle: Optional[bool] = None
     isEnabled: Optional[bool] = None
     name: Optional[str] = None
+    constraint: Optional[List[ConstraintRef]] = field(default_factory=list)
     featureCharacteristic: Optional[List[Characteristic]] = field(default_factory=list)
     featureRelationship: Optional[List[FeatureRelationship]] = field(
         default_factory=list
@@ -5209,6 +5289,7 @@ class Service(Entity, BaseCRUDMixin):
     isServiceEnabled: Optional[bool] = None
     isStateful: Optional[bool] = None
     operatingStatus: Optional[ServiceOperatingStatusType] = None
+    operatingStatusContextUpdate: Optional[ContextUpdate] = None
     serviceDate: Optional[str] = None
     serviceType: Optional[str] = None
     startDate: Optional[str] = None
@@ -5423,6 +5504,311 @@ class ServiceCatalog(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/serviceCatalogManagement/v4/serviceCatalog"
+
+
+@dataclass(repr=False)
+class ContextUpdate(Entity):
+    """Date and reason context behind the current value of a status or state (TMF641)."""
+
+    id: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    reason: Optional[str] = None
+    relatedEntity: Optional[List[EntityRef]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedParty]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class ExternalReference(Entity):
+    """Reference to an entity held in an external system (TMF641)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    externalReferenceType: Optional[str] = None
+    name: Optional[str] = None
+
+
+@dataclass(repr=False)
+class JsonPatch(Entity):
+    """A single JSON Patch (RFC 6902) operation, used by ``ServiceOrderItem.modifyPath``.
+
+    The RFC's ``from`` member is not modelled: it is a Python keyword, and the
+    serializer maps field names to wire names verbatim. It applies only to the
+    ``move`` and ``copy`` operations, which TMF641 order payloads do not use.
+    """
+
+    op: Optional[str] = None
+    path: Optional[str] = None
+    value: Any = None
+
+
+@dataclass(repr=False)
+class ServiceOrderRelationship(Entity):
+    """Link between a service order and another service order (TMF641)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    relationshipType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ServiceOrderItemRelationship(Entity):
+    """Link between service order items (TMF641)."""
+
+    relationshipType: Optional[str] = None
+    orderItem: Optional[ServiceOrderItemRef] = None
+
+
+@dataclass(repr=False)
+class OrderItemSpecRelationship(Entity):
+    """Link between order item specifications (TMF641)."""
+
+    orderItemSpecificationId: Optional[str] = None
+    parentOrderSpecificationHref: Optional[str] = None
+    parentOrderSpecificationId: Optional[str] = None
+    relationshipType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ServiceOrderMilestone(Milestone):
+    """A significant change or stage in the processing of a service order (TMF641)."""
+
+    serviceOrderItem: Optional[List[ServiceOrderItemRef]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class ServiceOrderJeopardyAlert(JeopardyAlert):
+    """A predicted exception putting completion of a service order at risk (TMF641)."""
+
+    serviceOrderItem: Optional[List[ServiceOrderItemRef]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class ServiceOrderErrorMessage(ErrorMessage):
+    """An error that causes a status change in a service order (TMF641)."""
+
+    timestamp: Optional[str] = None
+    serviceOrderItem: Optional[List[ServiceOrderItemRef]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class ServiceOrderItemErrorMessage(ErrorMessage):
+    """An error that causes a status change in a service order item (TMF641)."""
+
+    timestamp: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ServiceRefOrValue(Entity):
+    """A service carried either by reference or by value (TMF641)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    name: Optional[str] = None
+    endDate: Optional[str] = None
+    serviceDate: Optional[str] = None
+    startDate: Optional[str] = None
+    startMode: Optional[str] = None
+    serviceType: Optional[str] = None
+    hasStarted: Optional[bool] = None
+    isBundle: Optional[bool] = None
+    isServiceEnabled: Optional[bool] = None
+    isStateful: Optional[bool] = None
+    operatingStatus: Optional[ServiceOperatingStatusType] = None
+    operatingStatusContextUpdate: Optional[ContextUpdate] = None
+    state: Optional[ServiceStateType] = None
+    serviceSpecification: Optional[ServiceSpecificationRef] = None
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+    feature: Optional[List[Feature]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    place: Optional[List[RelatedPlaceRefOrValue]] = field(default_factory=list)
+    relatedEntity: Optional[List[RelatedEntityRefOrValue]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedParty]] = field(default_factory=list)
+    serviceCharacteristic: Optional[List[Characteristic]] = field(default_factory=list)
+    serviceOrderItem: Optional[List[RelatedServiceOrderItem]] = field(
+        default_factory=list
+    )
+    serviceRelationship: Optional[List[ServiceRelationship]] = field(
+        default_factory=list
+    )
+    supportingResource: Optional[List[ResourceRef]] = field(default_factory=list)
+    supportingService: Optional[List[ServiceRefOrValue]] = field(default_factory=list)
+    _referred_type: Optional[str] = None
+
+
+@dataclass(repr=False)
+class OrderItemSpecification(Entity):
+    """Template describing an order item, shared by orders built from it (TMF641)."""
+
+    id: Optional[str] = None
+    description: Optional[str] = None
+    name: Optional[str] = None
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    constraint: Optional[List[ConstraintRef]] = field(default_factory=list)
+    orderItemSpecRelationship: Optional[List[OrderItemSpecRelationship]] = field(
+        default_factory=list
+    )
+    specCharacteristic: Optional[List[CharacteristicSpecification]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(repr=False)
+class ServiceOrderItemSpecification(OrderItemSpecification):
+    """Template describing a service order item (TMF641)."""
+
+    actionType: Optional[ServiceOrderItemActionType] = None
+    otherAction: Optional[str] = None
+    serviceCategory: Optional[ServiceCategoryRef] = None
+    serviceSpecification: Optional[ServiceSpecificationRef] = None
+
+
+@dataclass(repr=False)
+class OrderSpecification(Entity):
+    """Template describing an order, shared by orders built from it (TMF641)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    description: Optional[str] = None
+    name: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    version: Optional[str] = None
+    isAutoResumeAllowed: Optional[bool] = None
+    isAutoUnlockAllowed: Optional[bool] = None
+    isBundle: Optional[bool] = None
+    isSyncModeEnabled: Optional[bool] = None
+    failurePolicy: Optional[OrderFailurePolicy] = None
+    sequencingPolicy: Optional[OrderSequencingPolicy] = None
+    targetEntitySchema: Optional[TargetEntitySchema] = None
+    validFor: Optional[TimePeriod] = None
+    workflow: Optional[ProcessFlowSpecificationRef] = None
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    constraint: Optional[List[ConstraintRef]] = field(default_factory=list)
+    entitySpecRelationship: Optional[List[EntitySpecificationRelationship]] = field(
+        default_factory=list
+    )
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedParty]] = field(default_factory=list)
+    specCharacteristic: Optional[List[CharacteristicSpecification]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(repr=False)
+class ServiceOrderSpecification(OrderSpecification, BaseCRUDMixin):
+    """Template by which service orders are instantiated and described (TMF641).
+
+    Service orders sharing a specification share the same set of behaviour.
+
+    Usage:
+        spec = ServiceOrderSpecification.from_dict(payload)
+        spec.get(context, resource_id="1234")
+    """
+
+    serviceOrderItemSpecification: Optional[List[ServiceOrderItemSpecification]] = (
+        field(default_factory=list)
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/serviceOrdering/v4/serviceOrderSpecification"
+
+
+@dataclass(repr=False)
+class ServiceOrderItem(Entity):
+    """A single actionable item of a service order (TMF641)."""
+
+    id: Optional[str] = None
+    name: Optional[str] = None
+    otherAction: Optional[str] = None
+    quantity: Optional[int] = None
+    action: Optional[ServiceOrderItemActionType] = None
+    state: Optional[ServiceOrderItemStateType] = None
+    appointment: Optional[AppointmentRef] = None
+    service: Optional[ServiceRefOrValue] = None
+    errorMessage: Optional[List[ServiceOrderItemErrorMessage]] = field(
+        default_factory=list
+    )
+    modifyPath: Optional[List[JsonPatch]] = field(default_factory=list)
+    orderItemCharacteristic: Optional[List[Characteristic]] = field(
+        default_factory=list
+    )
+    relatedParty: Optional[List[RelatedParty]] = field(default_factory=list)
+    serviceOrderItem: Optional[List[ServiceOrderItem]] = field(default_factory=list)
+    serviceOrderItemRelationship: Optional[List[ServiceOrderItemRelationship]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(repr=False)
+class ServiceOrder(Entity, BaseCRUDMixin):
+    """A request to provision a set of services (TMF641).
+
+    A service order is raised by a product order fulfilment process or directly
+    against the service ordering API.
+
+    Usage:
+        order = ServiceOrder.from_dict(payload)
+        order.get(context, resource_id="1234")
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    externalId: Optional[str] = None
+    notificationContact: Optional[str] = None
+    priority: Optional[str] = None
+    cancellationDate: Optional[str] = None
+    cancellationReason: Optional[str] = None
+    completionDate: Optional[str] = None
+    expectedCompletionDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    orderDate: Optional[str] = None
+    requestedCompletionDate: Optional[str] = None
+    requestedStartDate: Optional[str] = None
+    startDate: Optional[str] = None
+    state: Optional[ServiceOrderStateType] = None
+    orderSpecification: Optional[EntitySpecificationRef] = None
+    errorMessage: Optional[List[ServiceOrderErrorMessage]] = field(default_factory=list)
+    externalReference: Optional[List[ExternalReference]] = field(default_factory=list)
+    jeopardyAlert: Optional[List[ServiceOrderJeopardyAlert]] = field(
+        default_factory=list
+    )
+    milestone: Optional[List[ServiceOrderMilestone]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    orderCharacteristic: Optional[List[Characteristic]] = field(default_factory=list)
+    orderRelationship: Optional[List[ServiceOrderRelationship]] = field(
+        default_factory=list
+    )
+    relatedEntity: Optional[List[RelatedEntityRefOrValue]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedParty]] = field(default_factory=list)
+    serviceOrderItem: Optional[List[ServiceOrderItem]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/serviceOrdering/v4/serviceOrder"
+
+
+@dataclass(repr=False)
+class CancelServiceOrder(Entity, BaseCRUDMixin):
+    """A task requesting cancellation of an existing service order (TMF641)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    cancellationReason: Optional[str] = None
+    completionMessage: Optional[str] = None
+    effectiveCancellationDate: Optional[str] = None
+    requestedCancellationDate: Optional[str] = None
+    state: Optional[TaskStateType] = None
+    errorMessage: Optional[ErrorMessage] = None
+    serviceOrder: Optional[ServiceOrderRef] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/serviceOrdering/v4/cancelServiceOrder"
 
 
 @dataclass(repr=False)

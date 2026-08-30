@@ -42,3 +42,9 @@ Issues = "https://github.com/alex-chadyuk/tmforum/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=7", "build", "twine", "black"]
+
+[tool.black]
+# Pinned to the package's minimum supported Python. Without it Black infers its
+# targets from the open-ended `requires-python`, and its AST safety check then
+# fails to parse under older interpreters.
+target-version = ["py39"]

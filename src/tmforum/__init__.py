@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
 
 @dataclass
@@ -784,6 +784,13 @@ class PaymentStatus(enum.Enum):
     DUE = "due"
     PAID = "paid"
     OVERDUE = "overdue"
+    PENDING_AUTHORIZATION = "pendingAuthorization"
+    AUTHORIZED = "authorized"
+    CAPTURED = "captured"
+    FAILED = "failed"
+    CANCELED = "canceled"
+    DENIED = "denied"
+    DONE = "done"
 
 
 @enum.unique
@@ -1381,6 +1388,7 @@ class ItemRef(EntityRef):
 @dataclass(repr=False)
 class AccountRef(EntityRef):
     _referred_type: str = "Account"
+    description: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -2594,6 +2602,135 @@ class PaymentPlan(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/payment/v4/paymentPlan"
+
+
+@dataclass(repr=False)
+class PaymentItem(Entity):
+    """An individual item settled by a Payment (TMF676)."""
+
+    id: Optional[str] = None
+    amount: Optional[Money] = None
+    item: Optional[EntityRef] = None
+    taxAmount: Optional[Money] = None
+    totalAmount: Optional[Money] = None
+
+
+@dataclass(repr=False)
+class PaymentMethod(Entity):
+    """A means of payment (card, bank account, voucher, ...) usable by an account."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    description: Optional[str] = None
+    name: Optional[str] = None
+    status: Optional[str] = None
+    statusDate: Optional[str] = None
+    isPreferred: Optional[bool] = None
+    relatedParty: Optional[RelatedParty] = None
+    validFor: Optional[TimePeriod] = None
+    account: Optional[List[AccountRef]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class PaymentMethodRefOrValue(PaymentMethod):
+    """A payment method carried either by reference or by value (TMF676)."""
+
+    _referred_type: Optional[str] = None
+
+
+@dataclass(repr=False)
+class Payment(Entity, BaseCRUDMixin):
+    """Represents a payment settling one or more items in the TM Forum TMF676 Payment API.
+
+    A Payment records the transfer of an amount from a payer to the operator, the
+    method used to settle it, the account it applies to and the individual items it
+    covers. The amount actually transferred (`amount`) is tracked separately from the
+    amount due (`totalAmount`) and the tax portion (`taxAmount`).
+
+    Attributes:
+        authorizationCode (Optional[str]): Code returned by the payment gateway on authorization.
+        correlatorId (Optional[str]): Client-supplied identifier used to correlate the request.
+        paymentDate (Optional[str]): Date and time the payment was performed.
+        status (Optional[PaymentStatus]): Current status of the payment.
+        statusDate (Optional[str]): Date and time the status was last updated.
+        account (Optional[AccountRef]): Account the payment applies to.
+        amount (Optional[Money]): Amount actually transferred.
+        channel (Optional[ChannelRef]): Channel through which the payment was made.
+        payer (Optional[RelatedParty]): Party performing the payment.
+        paymentItem (Optional[List[PaymentItem]]): Items settled by this payment.
+        paymentMethod (Optional[PaymentMethodRefOrValue]): Method used to settle the payment.
+        taxAmount (Optional[Money]): Tax portion of the total amount.
+        totalAmount (Optional[Money]): Total amount due, taxes included.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    authorizationCode: Optional[str] = None
+    correlatorId: Optional[str] = None
+    description: Optional[str] = None
+    name: Optional[str] = None
+    paymentDate: Optional[str] = None
+    status: Optional[PaymentStatus] = None
+    statusDate: Optional[str] = None
+    account: Optional[AccountRef] = None
+    amount: Optional[Money] = None
+    channel: Optional[ChannelRef] = None
+    payer: Optional[RelatedParty] = None
+    paymentMethod: Optional[PaymentMethodRefOrValue] = None
+    taxAmount: Optional[Money] = None
+    totalAmount: Optional[Money] = None
+    paymentItem: Optional[List[PaymentItem]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/payment/v4/payment"
+
+
+@dataclass(repr=False)
+class Refund(Entity, BaseCRUDMixin):
+    """Represents the reimbursement of a previous payment in the TM Forum TMF676 Payment API.
+
+    A Refund mirrors the Payment it reverses: it references the original payment,
+    the account credited, the method used to return the funds and the party that
+    requested it.
+
+    Attributes:
+        authorizationCode (Optional[str]): Code returned by the payment gateway on authorization.
+        correlatorId (Optional[str]): Client-supplied identifier used to correlate the request.
+        refundDate (Optional[str]): Date and time the refund was performed.
+        status (Optional[PaymentStatus]): Current status of the refund.
+        statusDate (Optional[str]): Date and time the status was last updated.
+        account (Optional[AccountRef]): Account the refund applies to.
+        amount (Optional[Money]): Amount actually reimbursed.
+        channel (Optional[ChannelRef]): Channel through which the refund was made.
+        payment (Optional[PaymentRef]): Payment being reimbursed.
+        paymentMethod (Optional[PaymentMethodRefOrValue]): Method used to return the funds.
+        requestor (Optional[RelatedParty]): Party requesting the refund.
+        taxAmount (Optional[Money]): Tax portion of the total amount.
+        totalAmount (Optional[Money]): Total amount reimbursed, taxes included.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    authorizationCode: Optional[str] = None
+    correlatorId: Optional[str] = None
+    description: Optional[str] = None
+    name: Optional[str] = None
+    refundDate: Optional[str] = None
+    status: Optional[PaymentStatus] = None
+    statusDate: Optional[str] = None
+    account: Optional[AccountRef] = None
+    amount: Optional[Money] = None
+    channel: Optional[ChannelRef] = None
+    payment: Optional[PaymentRef] = None
+    paymentMethod: Optional[PaymentMethodRefOrValue] = None
+    requestor: Optional[RelatedParty] = None
+    taxAmount: Optional[Money] = None
+    totalAmount: Optional[Money] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/payment/v4/refund"
 
 
 @dataclass(repr=False)
@@ -4190,6 +4327,7 @@ class RelatedParty(Entity):
     name: Optional[str] = None
     role: Optional[str] = None
     partyOrPartyRole: Optional[Union[PartyRef, PartyRoleRef]] = None
+    _referred_type: Optional[str] = None  # Support of TMF676 v4
 
 
 @dataclass(repr=False)

@@ -4,6 +4,42 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.10.0 — 2026-08-30
+
+Source spec: TMF676 Payment Management v4.0.0.
+
+The SDK previously covered TMF676 only through `PaymentPlan`. This release adds
+the API's two REST resources — `Payment` and `Refund` — plus the sub-entities
+they depend on. Paths follow the spec's `basePath` (`payment/v4`), matching the
+existing `PaymentPlan` path.
+
+This is a Swagger 2.0 spec, so there are no `_FVO`/`_MVO` variants; the
+`_Create` variants add no fields over their base schemas — they only omit
+server-assigned ones — so each entity is modelled from the base schema alone.
+`*Event` / `*EventPayload`, `EventSubscription` and `Error` schemas are not
+modelled.
+
+### Added
+
+- `Payment` (CRUD, `payment/v4/payment`) — settlement of one or more items,
+  with payer, channel, account, payment method and per-item amounts.
+- `Refund` (CRUD, `payment/v4/refund`) — reimbursement of a previous payment,
+  referencing it via `PaymentRef` and carrying the requesting party.
+- `PaymentItem` — an individual item settled by a `Payment`.
+- `PaymentMethod` — a means of payment; no path in this spec (owned by TMF670),
+  so it is a plain entity without CRUD.
+- `PaymentMethodRefOrValue` — payment method carried by reference or by value.
+- `PaymentStatus` gained the TMF676 transaction states: `pendingAuthorization`,
+  `authorized`, `captured`, `failed`, `canceled`, `denied`, `done` (the existing
+  `due` / `paid` / `overdue` account values are unchanged). The same value set
+  covers the spec's `PaymentStatusExampleType` and `RefundStatusExampleType`.
+- `AccountRef` gained `description`, present in the spec's `AccountRef`.
+
+`AccountRef`, `ChannelRef`, `PaymentRef`, `PaymentMethodRef`, `Money`,
+`TimePeriod`, `RelatedParty` and `EntityRef` already existed and are reused
+as-is. Note that the SDK's `RelatedParty` is v5-shaped (it also carries
+`partyOrPartyRole`); all fields TMF676 v4 needs are present.
+
 ## 0.9.0 — 2026-08-30
 
 Source spec: TMF641 Service Ordering v4.2.0.

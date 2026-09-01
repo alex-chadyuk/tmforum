@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 
 @dataclass
@@ -549,6 +549,18 @@ class AccountType(enum.Enum):
 
 
 @enum.unique
+class ApiStandardNameType(enum.Enum):
+    CAMARA = "CAMARA"
+    NON_STANDARD = "nonStandard"
+
+
+@enum.unique
+class ApiStatusType(enum.Enum):
+    ACTIVE = "active"
+    RETIRED = "retired"
+
+
+@enum.unique
 class AppliedCustomerBillingRateType(enum.Enum):
     PRODUCT_RECURRING_CHARGE = "appliedBillingChargeProductRecurringCharge"
     ONE_TIME_CHARGE = "appliedBillingChargeProductOneTimeCharge"
@@ -664,6 +676,138 @@ class ConnectionAssociationType(enum.Enum):
 
 
 @enum.unique
+class DpvLegalBasisType(enum.Enum):
+    """Valid values based on W3C Data Privacy Vocabulary v2 (https://w3c.github.io/dpv/2.0/dpv/)."""
+
+    CONSENT = "dpv:Consent"
+    CONTRACT = "dpv:Contract"
+    CONTRACT_PERFORMANCE = "dpv:ContractPerformance"
+    DATA_TRANSFER_LEGAL_BASIS = "dpv:DataTransferLegalBasis"
+    ENTER_INTO_CONTRACT = "dpv:EnterIntoContract"
+    LEGAL_BASIS = "dpv:LegalBasis"
+    LEGAL_OBLIGATION = "dpv:LegalObligation"
+    LEGITIMATE_INTEREST = "dpv:LegitimateInterest"
+    LEGITIMATE_INTEREST_OF_CONTROLLER = "dpv:LegitimateInterestOfController"
+    LEGITIMATE_INTEREST_OF_DATA_SUBJECT = "dpv:LegitimateInterestOfDataSubject"
+    LEGITIMATE_INTEREST_OF_THIRD_PARTY = "dpv:LegitimateInterestOfThirdParty"
+    OFFICIAL_AUTHORITY_OF_CONTROLLER = "dpv:OfficialAuthorityOfController"
+    PUBLIC_INTEREST = "dpv:PublicInterest"
+    VITAL_INTEREST = "dpv:VitalInterest"
+    VITAL_INTEREST_OF_DATA_SUBJECT = "dpv:VitalInterestOfDataSubject"
+    VITAL_INTEREST_OF_NATURAL_PERSON = "dpv:VitalInterestOfNaturalPerson"
+    INFORMED_CONSENT = "dpv:InformedConsent"
+    DATA_CONTROLLER_CONTRACT = "dpv:DataControllerContract"
+    IMPLIED_CONSENT = "dpv:ImpliedConsent"
+    DATA_SUBJECT_CONTRACT = "dpv:DataSubjectContract"
+    EXPLICITLY_EXPRESSED_CONSENT = "dpv:ExplicitlyExpressedConsent"
+    UNINFORMED_CONSENT = "dpv:UninformedConsent"
+    DATA_PROCESSOR_CONTRACT = "dpv:DataProcessorContract"
+    EXPRESSED_CONSENT = "dpv:ExpressedConsent"
+    THIRD_PARTY_CONTRACT = "dpv:ThirdPartyContract"
+
+
+@enum.unique
+class DpvPurposeType(enum.Enum):
+    """Valid values based on W3C Data Privacy Vocabulary v2 (https://w3c.github.io/dpv/2.0/dpv/)."""
+
+    ACADEMIC_RESEARCH = "dpv:AcademicResearch"
+    ACCOUNT_MANAGEMENT = "dpv:AccountManagement"
+    ADVERTISING = "dpv:Advertising"
+    AGE_VERIFICATION = "dpv:AgeVerification"
+    COMBAT_CLIMATE_CHANGE = "dpv:CombatClimateChange"
+    COMMERCIAL_PURPOSE = "dpv:CommercialPurpose"
+    COMMERCIAL_RESEARCH = "dpv:CommercialResearch"
+    COMMUNICATION_FOR_CUSTOMER_CARE = "dpv:CommunicationForCustomerCare"
+    COMMUNICATION_MANAGEMENT = "dpv:CommunicationManagement"
+    COUNTER_MONEY_LAUNDERING = "dpv:CounterMoneyLaundering"
+    COUNTERTERRORISM = "dpv:Counterterrorism"
+    CREDIT_CHECKING = "dpv:CreditChecking"
+    CUSTOMER_CARE = "dpv:CustomerCare"
+    CUSTOMER_CLAIMS_MANAGEMENT = "dpv:CustomerClaimsManagement"
+    CUSTOMER_MANAGEMENT = "dpv:CustomerManagement"
+    CUSTOMER_ORDER_MANAGEMENT = "dpv:CustomerOrderManagement"
+    CUSTOMER_RELATIONSHIP_MANAGEMENT = "dpv:CustomerRelationshipManagement"
+    CUSTOMER_SOLVENCY_MONITORING = "dpv:CustomerSolvencyMonitoring"
+    DATA_ALTRUISM = "dpv:DataAltruism"
+    DELIVERY_OF_GOODS = "dpv:DeliveryOfGoods"
+    DIRECT_MARKETING = "dpv:DirectMarketing"
+    DISPUTE_MANAGEMENT = "dpv:DisputeManagement"
+    ENFORCE_ACCESS_CONTROL = "dpv:EnforceAccessControl"
+    ENFORCE_SECURITY = "dpv:EnforceSecurity"
+    ESTABLISH_CONTRACTUAL_AGREEMENT = "dpv:EstablishContractualAgreement"
+    FRAUD_PREVENTION_AND_DETECTION = "dpv:FraudPreventionAndDetection"
+    FULFILMENT_OF_CONTRACTUAL_OBLIGATION = "dpv:FulfilmentOfContractualObligation"
+    FULFILMENT_OF_OBLIGATION = "dpv:FulfilmentOfObligation"
+    HUMAN_RESOURCE_MANAGEMENT = "dpv:HumanResourceManagement"
+    IDENTITY_AUTHENTICATION = "dpv:IdentityAuthentication"
+    IDENTITY_VERIFICATION = "dpv:IdentityVerification"
+    IMPROVE_EXISTING_PRODUCTS_AND_SERVICES = "dpv:ImproveExistingProductsAndServices"
+    IMPROVE_HEALTHCARE = "dpv:ImproveHealthcare"
+    IMPROVE_INTERNAL_CRM_PROCESSES = "dpv:ImproveInternalCRMProcesses"
+    IMPROVE_PUBLIC_SERVICES = "dpv:ImprovePublicServices"
+    IMPROVE_TRANSPORT_MOBILITY = "dpv:ImproveTransportMobility"
+    INCREASE_SERVICE_ROBUSTNESS = "dpv:IncreaseServiceRobustness"
+    INTERNAL_RESOURCE_OPTIMISATION = "dpv:InternalResourceOptimisation"
+    LEGAL_COMPLIANCE = "dpv:LegalCompliance"
+    MAINTAIN_CREDIT_CHECKING_DATABASE = "dpv:MaintainCreditCheckingDatabase"
+    MAINTAIN_CREDIT_RATING_DATABASE = "dpv:MaintainCreditRatingDatabase"
+    MAINTAIN_FRAUD_DATABASE = "dpv:MaintainFraudDatabase"
+    MARKETING = "dpv:Marketing"
+    MEMBER_PARTNER_MANAGEMENT = "dpv:MemberPartnerManagement"
+    MISUSE_PREVENTION_AND_DETECTION = "dpv:MisusePreventionAndDetection"
+    NON_COMMERCIAL_PURPOSE = "dpv:NonCommercialPurpose"
+    NON_COMMERCIAL_RESEARCH = "dpv:NonCommercialResearch"
+    OPTIMISATION_FOR_CONSUMER = "dpv:OptimisationForConsumer"
+    OPTIMISATION_FOR_CONTROLLER = "dpv:OptimisationForController"
+    OPTIMISE_USER_INTERFACE = "dpv:OptimiseUserInterface"
+    ORGANISATION_COMPLIANCE_MANAGEMENT = "dpv:OrganisationComplianceManagement"
+    ORGANISATION_GOVERNANCE = "dpv:OrganisationGovernance"
+    ORGANISATION_RISK_MANAGEMENT = "dpv:OrganisationRiskManagement"
+    PAYMENT_MANAGEMENT = "dpv:PaymentManagement"
+    PERSONALISATION = "dpv:Personalisation"
+    PERSONALISED_ADVERTISING = "dpv:PersonalisedAdvertising"
+    PERSONALISED_BENEFITS = "dpv:PersonalisedBenefits"
+    PERSONNEL_HIRING = "dpv:PersonnelHiring"
+    PERSONNEL_MANAGEMENT = "dpv:PersonnelManagement"
+    PERSONNEL_PAYMENT = "dpv:PersonnelPayment"
+    PROTECTION_OF_IPR = "dpv:ProtectionOfIPR"
+    PROTECTION_OF_NATIONAL_SECURITY = "dpv:ProtectionOfNationalSecurity"
+    PROTECTION_OF_PUBLIC_SECURITY = "dpv:ProtectionOfPublicSecurity"
+    PROVIDE_EVENT_RECOMMENDATIONS = "dpv:ProvideEventRecommendations"
+    PROVIDE_OFFICIAL_STATISTICS = "dpv:ProvideOfficialStatistics"
+    PROVIDE_PERSONALISED_RECOMMENDATIONS = "dpv:ProvidePersonalisedRecommendations"
+    PROVIDE_PRODUCT_RECOMMENDATIONS = "dpv:ProvideProductRecommendations"
+    PUBLIC_BENEFIT = "dpv:PublicBenefit"
+    PUBLIC_POLICY_MAKING = "dpv:PublicPolicyMaking"
+    PUBLIC_RELATIONS = "dpv:PublicRelations"
+    RECORD_MANAGEMENT = "dpv:RecordManagement"
+    REPAIR_IMPAIRMENTS = "dpv:RepairImpairments"
+    REQUESTED_SERVICE_PROVISION = "dpv:RequestedServiceProvision"
+    RESEARCH_AND_DEVELOPMENT = "dpv:ResearchAndDevelopment"
+    RIGHTS_FULFILLMENT = "dpv:RightsFulfillment"
+    SCIENTIFIC_RESEARCH = "dpv:ScientificResearch"
+    SEARCH_FUNCTIONALITIES = "dpv:SearchFunctionalities"
+    SELL_DATA_TO_THIRD_PARTIES = "dpv:SellDataToThirdParties"
+    SELL_INSIGHTS_FROM_DATA = "dpv:SellInsightsFromData"
+    SELL_PRODUCTS = "dpv:SellProducts"
+    SELL_PRODUCTS_TO_DATA_SUBJECT = "dpv:SellProductsToDataSubject"
+    SERVICE_OPTIMISATION = "dpv:ServiceOptimisation"
+    SERVICE_PERSONALISATION = "dpv:ServicePersonalisation"
+    SERVICE_PROVISION = "dpv:ServiceProvision"
+    SERVICE_REGISTRATION = "dpv:ServiceRegistration"
+    SERVICE_USAGE_ANALYTICS = "dpv:ServiceUsageAnalytics"
+    SOCIAL_MEDIA_MARKETING = "dpv:SocialMediaMarketing"
+    TARGETED_ADVERTISING = "dpv:TargetedAdvertising"
+    TECHNICAL_SERVICE_PROVISION = "dpv:TechnicalServiceProvision"
+    USER_INTERFACE_PERSONALISATION = "dpv:UserInterfacePersonalisation"
+    VENDOR_MANAGEMENT = "dpv:VendorManagement"
+    VENDOR_PAYMENT = "dpv:VendorPayment"
+    VENDOR_RECORDS_MANAGEMENT = "dpv:VendorRecordsManagement"
+    VENDOR_SELECTION_ASSESSMENT = "dpv:VendorSelectionAssessment"
+    VERIFICATION = "dpv:Verification"
+
+
+@enum.unique
 class EntryType(enum.Enum):
     POST_CLOSURE = "postClosure"
     FULFILMENT = "fulfilment"
@@ -741,6 +885,53 @@ class NoteTypeEnum(enum.Enum):
 class OneTimeFeeAppliesOnEnum(enum.Enum):
     ITEM = "item"
     QUANTITY = "quantity"
+
+
+@enum.unique
+class OpenGatewayAllowedProductActionType(enum.Enum):
+    ADD = "add"
+    DELETE = "delete"
+
+
+@enum.unique
+class OpenGatewayAttachmentType(enum.Enum):
+    TERMS_AND_CONDITIONS = "termsAndConditions"
+    DEVELOPER_DOCUMENTATION = "developerDocumentation"
+
+
+@enum.unique
+class OpenGatewayProductOfferingLifecycleStatusType(enum.Enum):
+    IN_TEST = "inTest"
+    LAUNCHED = "launched"
+    RETIRED = "retired"
+    OBSOLETE = "obsolete"
+
+
+@enum.unique
+class OpenGatewayProductOfferingPriceLifecycleStatus(enum.Enum):
+    IN_TEST = "inTest"
+    ACTIVE = "active"
+    RETIRED = "retired"
+    OBSOLETE = "obsolete"
+
+
+@enum.unique
+class OpenGatewayProductOfferingPriceType(enum.Enum):
+    COMPOSITE = "composite"
+
+
+@enum.unique
+class OpenGatewayProductSpecificationRelationshipType(enum.Enum):
+    REQUIRES = "requires"
+    APPLIES_ON = "appliesOn"
+
+
+@enum.unique
+class OpenGatewayProductSpecificationLifecycleStatus(enum.Enum):
+    IN_TEST = "inTest"
+    ACTIVE = "active"
+    RETIRED = "retired"
+    OBSOLETE = "obsolete"
 
 
 @enum.unique
@@ -1688,6 +1879,11 @@ class ProductSpecificationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class OpenGatewayProductSpecificationRef(ProductSpecificationRef):
+    _referred_type: Optional[str] = "OpenGatewayProductSpecification"
+
+
+@dataclass(repr=False)
 class PromotionRef(EntityRef):
     _referred_type: Optional[str] = "Promotion"
 
@@ -2064,6 +2260,13 @@ class TargetProductSchema(Entity):
 
 
 @dataclass(repr=False)
+class TargetProductOrderItemSchema(Entity):
+    """The schema and type of the target product order item described by an allowed action."""
+
+    _schema_location: Optional[str] = None
+
+
+@dataclass(repr=False)
 class StabilityOffendingEntity(Entity):
     id: Optional[str] = None
     _referred_type: Optional[str] = None
@@ -2096,6 +2299,11 @@ class ProductSpecificationRelationship(Entity):
     )
     version: Optional[str] = None
     validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class OpenGatewayProductSpecificationRelationship(ProductSpecificationRelationship):
+    relationshipType: Optional[OpenGatewayProductSpecificationRelationshipType] = None
 
 
 @dataclass(repr=False)
@@ -2152,8 +2360,57 @@ class ProductSpecification(Entity, BaseCRUDMixin):
 
 
 @dataclass(repr=False)
-class ApiProductSpecification(ProductSpecification):
+class ApiGrantInformation(Entity):
+    """Grant of access to an API product: its purpose, scope, grant type and legal basis."""
+
+    purpose: Optional[DpvPurposeType] = None
+    scope: Optional[List[str]] = field(default_factory=list)
+    grantType: Optional[List[str]] = field(default_factory=list)
+    legalBasis: Optional[DpvLegalBasisType] = None
+
+
+@dataclass(repr=False)
+class ApiVersionInformation(Entity):
+    """Technical information of an API version: base path and supported OAuth 2.0 grants/scopes."""
+
+    apiName: Optional[str] = None
+    apiVersion: Optional[str] = None
+    apiBasePath: Optional[str] = None
+    apiGrantInformation: Optional[List[ApiGrantInformation]] = field(
+        default_factory=list
+    )
+    apiStatus: Optional[ApiStatusType] = None
+
+
+@dataclass(repr=False)
+class OpenGatewayProductSpecification(ProductSpecification):
+    """The specialized ProductSpecification for the GSMA Open Gateway Operate API (TMF936)."""
+
+    lifecycleStatus: Optional[OpenGatewayProductSpecificationLifecycleStatus] = None
+    attachment: Optional[List[OpenGatewayAttachment]] = field(default_factory=list)
+    productSpecificationRelationship: Optional[
+        List[OpenGatewayProductSpecificationRelationship]
+    ] = field(default_factory=list)
+    allowedAction: Optional[List[OpenGatewayAllowedProductAction]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/openGatewayOperateAPIProductCatalog/v5/productSpecification"
+
+
+@dataclass(repr=False)
+class UsageVolumeProductSpecification(OpenGatewayProductSpecification):
     pass
+
+
+@dataclass(repr=False)
+class ApiProductSpecification(OpenGatewayProductSpecification):
+    apiStandardName: Optional[ApiStandardNameType] = None
+    apiVersionInformation: Optional[List[ApiVersionInformation]] = field(
+        default_factory=list
+    )
 
 
 @dataclass(repr=False)
@@ -2248,6 +2505,14 @@ class ProductOfferingPrice(Entity):
     upperPercentageLimit: Optional[float] = None
     upperPriceLimit: Optional[Money] = None
     upperValueLimit: Optional[float] = None
+
+
+@dataclass(repr=False)
+class OpenGatewayProductOfferingPrice(ProductOfferingPrice):
+    """ProductOfferingPrice applied to an OpenGatewayProductOffering."""
+
+    lifecycleStatus: Optional[OpenGatewayProductOfferingPriceLifecycleStatus] = None
+    priceType: Optional[OpenGatewayProductOfferingPriceType] = None
 
 
 @dataclass(repr=False)
@@ -2554,6 +2819,38 @@ class ProductOffering(Entity, BaseCRUDMixin):
     def activate(self, context: Context) -> ProductOffering:
         payload = {"state": LifecycleStatus.ACTIVE.value}
         return self.update(payload, context)
+
+
+@dataclass(repr=False)
+class OpenGatewayProductOfferingTermOrConditionSpecification(Entity):
+    """Specification of Terms or Conditions of an OpenGatewayProductOffering."""
+
+    id: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    attachment: Optional[OpenGatewayFileAttachment] = None
+
+
+@dataclass(repr=False)
+class OpenGatewayProductOffering(ProductOffering):
+    """The specialized ProductOffering for the GSMA Open Gateway Operate API (TMF936)."""
+
+    lifecycleStatus: Optional[OpenGatewayProductOfferingLifecycleStatusType] = None
+    productSpecification: Optional[OpenGatewayProductSpecificationRef] = None
+    productOfferingPrice: Optional[List[OpenGatewayProductOfferingPrice]] = field(
+        default_factory=list
+    )
+    allowedAction: Optional[List[OpenGatewayAllowedProductAction]] = field(
+        default_factory=list
+    )
+    attachment: Optional[List[OpenGatewayAttachment]] = field(default_factory=list)
+    productOfferingTermOrConditionSpecification: Optional[
+        List[OpenGatewayProductOfferingTermOrConditionSpecification]
+    ] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/openGatewayOperateAPIProductCatalog/v5/productOffering"
 
 
 @dataclass(repr=False)
@@ -3680,12 +3977,27 @@ class AttachmentRefOrValue(Attachment):
 
 
 @dataclass(repr=False)
-class OpenGatewayURLAttachment(Attachment):
+class OpenGatewayAttachment(Attachment):
+    """Generic attachment in the GSMA Open Gateway Operate API context (TMF936)."""
+
+    attachmentType: Optional[OpenGatewayAttachmentType] = None
+
+
+@dataclass(repr=False)
+class OpenGatewayFileAttachment(OpenGatewayAttachment):
+    """Binary file attachment; ``content`` is base64-encoded."""
+
+    pass
+
+
+@dataclass(repr=False)
+class OpenGatewayURLAttachment(OpenGatewayAttachment):
     pass
 
 
 @dataclass(repr=False)
 class OpenGatewayAllowedProductAction(AllowedProductAction):
+    action: Optional[OpenGatewayAllowedProductActionType] = None
     _target_product_order_item_schema: Optional[str] = None
 
 

@@ -4,6 +4,84 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.12.0 — 2026-09-01
+
+Source spec: TMF936 Open Gateway Operate API — Product Catalog v5.0.0.
+
+Adds the GSMA Open Gateway specializations of the product catalog: the two REST
+resources the API exposes (`productOffering`, `productSpecification`) and the
+sub-entities and enumerations they narrow. TMF936 layers its types over an
+abstract DCS tier (`DcsProductOffering`, `DcsProductSpecification`, …), each
+documented as "a subset of the standard schema"; rather than duplicate that
+tier, the Open Gateway classes extend the SDK's existing `ProductOffering` /
+`ProductSpecification` / `ProductOfferingPrice` / `Attachment` and override only
+the fields TMF936 constrains. Consequence: `to_dict()` emits
+`@baseType: "ProductOffering"` where a TMF936 server emits
+`"DcsProductOffering"`. `Hub`, the four `*Event` schemas and their payloads, the
+`_RES` variants and `Error` are not modelled.
+
+This spec has no `_FVO`/`_MVO` variants.
+
+### Added
+
+- `OpenGatewayProductOffering` (CRUD,
+  `openGatewayOperateAPIProductCatalog/v5/productOffering`, extends
+  `ProductOffering`) — narrows `lifecycleStatus`, `productSpecification`,
+  `productOfferingPrice`, `allowedAction` and `attachment`; adds
+  `productOfferingTermOrConditionSpecification`.
+- `OpenGatewayProductSpecification` (CRUD,
+  `openGatewayOperateAPIProductCatalog/v5/productSpecification`, extends
+  `ProductSpecification`) — narrows `lifecycleStatus`,
+  `productSpecificationRelationship` and `attachment`; adds `allowedAction`,
+  which the standard `ProductSpecification` does not carry.
+- `UsageVolumeProductSpecification` — discriminator subtype, no added fields.
+- `OpenGatewayProductOfferingPrice` (extends `ProductOfferingPrice`) — narrows
+  `lifecycleStatus` and `priceType`.
+- `OpenGatewayProductOfferingTermOrConditionSpecification` — `id`, `name`,
+  `description`, `attachment`.
+- `OpenGatewayProductSpecificationRelationship` (extends
+  `ProductSpecificationRelationship`) — narrows `relationshipType`.
+- `OpenGatewayAttachment` (extends `Attachment`) — narrows `attachmentType`;
+  `OpenGatewayFileAttachment` for base64 `content`.
+- `ApiVersionInformation` — `apiName`, `apiVersion`, `apiBasePath`,
+  `apiGrantInformation`, `apiStatus`.
+- `ApiGrantInformation` — `purpose`, `scope`, `grantType`, `legalBasis`.
+- `TargetProductOrderItemSchema` — `@schemaLocation` of the target product
+  order item schema.
+
+### New refs
+
+- `OpenGatewayProductSpecificationRef` (extends `ProductSpecificationRef`,
+  referred type `OpenGatewayProductSpecification`).
+
+### New enums
+
+- `OpenGatewayProductOfferingLifecycleStatusType`,
+  `OpenGatewayProductSpecificationLifecycleStatus`,
+  `OpenGatewayProductOfferingPriceLifecycleStatus`,
+  `OpenGatewayProductOfferingPriceType`,
+  `OpenGatewayAllowedProductActionType`, `OpenGatewayAttachmentType`,
+  `OpenGatewayProductSpecificationRelationshipType`.
+- `ApiStandardNameType`, `ApiStatusType`.
+- `DpvPurposeType` (95 values) and `DpvLegalBasisType` (25 values), from the
+  W3C Data Privacy Vocabulary v2.
+
+### Changed
+
+- `ApiProductSpecification` now extends `OpenGatewayProductSpecification`
+  instead of `ProductSpecification`, and gains `apiStandardName` and
+  `apiVersionInformation`. It was previously an empty subclass. The rebase is
+  required for `@type` resolution: `from_dict` only switches to a subtype that
+  is a subclass of the calling class, so without it
+  `OpenGatewayProductSpecification.query_get()` against `/productSpecification`
+  would silently drop the API fields. Its resource path changes from
+  `productCatalogManagement/v5` to
+  `openGatewayOperateAPIProductCatalog/v5/productSpecification`.
+- `OpenGatewayURLAttachment` now extends `OpenGatewayAttachment` instead of
+  `Attachment`. No fields change — `url` and `mimeType` are still inherited.
+- `OpenGatewayAllowedProductAction.action` is narrowed from `ProductActionType`
+  to `OpenGatewayAllowedProductActionType` (`add`, `delete`).
+
 ## 0.11.0 — 2026-09-01
 
 Source spec: TMF679 Product Offering Qualification v5.0.0.

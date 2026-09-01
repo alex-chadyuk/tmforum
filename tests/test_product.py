@@ -21,6 +21,7 @@ from tmforum import (
     CheckProductConfigurationItemState,
     ConfigurationAction,
     ConfigurationTerm,
+    Context,
     CustomerBillRef,
     Duration,
     EmailContactMedium,
@@ -1539,3 +1540,10 @@ def test_party_ref_has_no_version():
     party = Individual(id="123", familyName="Doe", version="1.0")
     party_ref = PartyRef.from_entity(party)
     assert not hasattr(party_ref, "version")
+
+
+def test_check_product_configuration_resource_path():
+    context = Context(api_base_url="https://mycsp.com/tmf-api")
+    assert CheckProductConfiguration.get_resource_path(context) == (
+        "https://mycsp.com/tmf-api/productConfiguration/v5/checkProductConfiguration"
+    )

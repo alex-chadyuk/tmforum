@@ -4,6 +4,53 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.13.0 — 2026-09-01
+
+Source spec: TMF760 Product Configuration v5.0.0.
+
+Completes the API's second REST resource, `QueryProductConfiguration` — the task
+that returns the constraints within which a product may be configured (for a new
+offering) or the actions that may be applied to it (for a product from
+inventory). Its whole sub-entity graph (`ProductConfiguration` and below) was
+already present from the `CheckProductConfiguration` side and is reused
+unchanged; `ProductConfiguration` needed no fields added, matching the spec 17
+for 17.
+
+The spec's `oneOf` pseudo-schemas (`ProductRefOrValue`, `PartyRefOrPartyRoleRef`,
+`PartyOrPartyRole`, `PlaceRefOrValue`, `IntentRefOrValue`,
+`GeographicLocationRefOrValue`) get no classes of their own — the SDK inlines
+them as `Union[...]` at the field, as it already does elsewhere. `Hub`, the eight
+`*Event` listeners and the `_EVO`/`_RES` variants are not modelled.
+
+`QueryProductConfigurationItem.state` is typed `Optional[str]`: the spec declares
+a plain string with no enumeration (the description offers "accepted, rejected"
+only as an example), so unlike the `Check` sibling it gets no enum.
+
+### Added
+
+- `QueryProductConfiguration` (CRUD,
+  `productConfiguration/v5/queryProductConfiguration`) — `id`, `href`,
+  `instantSync`, `state`, `channel`, `contextEntity`, `contextCharacteristic`,
+  `relatedParty`, `requestProductConfigurationItem`,
+  `computedProductConfigurationItem`.
+- `QueryProductConfigurationItem` — `id`, `state`, `stateReason`, `contextItem`,
+  `productConfiguration`, `productConfigurationItemRelationship` and the
+  recursive `queryProductConfigurationItem`. Requires `id` at instantiation,
+  mirroring `CheckProductConfigurationItem`.
+- `CheckProductConfiguration` is now a CRUD resource: it gains `BaseCRUDMixin`
+  and `get_resource_path` → `productConfiguration/v5/checkProductConfiguration`.
+- `ItemRef.entityId` — present in the spec, previously missing alongside
+  `entityHref` and `itemId`.
+- `CreditProfile.id` and `CreditProfile.href` — the spec derives it from
+  `Addressable`.
+
+### Notes
+
+`GeographicAddress`, `GeographicLocation`, `GeographicSite`, `Intent` and
+`AgreementItemRef` remain `NotImplementedError` stubs. TMF760 references them
+transitively through `Product`, and its spec carries their full field sets, but
+they belong to other APIs and filling them in is left to those.
+
 ## 0.12.0 — 2026-09-01
 
 Source spec: TMF936 Open Gateway Operate API — Product Catalog v5.0.0.

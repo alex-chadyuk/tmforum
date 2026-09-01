@@ -86,7 +86,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF685 Resource Pool | `resourcePool/v5` | `ResourcePool`, `ResourcePoolSpecification`, `CapacitySpecification` |
 | TMF676 Payment | `payment/v4` | `Payment`, `Refund`, `PaymentMethod`, `PaymentPlan` |
 | TMF936 Open Gateway Operate — Product Catalog | `openGatewayOperateAPIProductCatalog/v5` | `OpenGatewayProductOffering`, `OpenGatewayProductSpecification`, `ApiProductSpecification`, `UsageVolumeProductSpecification` |
-| TMF760 Product Configuration | *(entity models only)* | `CheckProductConfiguration.from_order()` |
+| TMF760 Product Configuration | `productConfiguration/v5` | `CheckProductConfiguration`, `QueryProductConfiguration`, `ProductConfiguration` |
 
 ## How it works
 

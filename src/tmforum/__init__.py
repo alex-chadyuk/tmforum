@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 
 @dataclass
@@ -1573,6 +1573,7 @@ class WorkflowImpactTypeEnum(enum.Enum):
 class ItemRef(EntityRef):
     _referred_type: str = "Item"
     entityHref: Optional[str] = None
+    entityId: Optional[str] = None
     itemId: Optional[str] = None
 
 
@@ -3171,6 +3172,8 @@ class ExternalIdentifier(Entity):
 
 @dataclass(repr=False)
 class CreditProfile(Entity):
+    id: Optional[str] = None
+    href: Optional[str] = None
     creditProfileDate: Optional[str] = None
     creditRiskRating: Optional[int] = None
     creditScore: Optional[int] = None
@@ -4393,7 +4396,7 @@ class CheckProductConfigurationItem(Entity):
 
 
 @dataclass(repr=False)
-class CheckProductConfiguration(Entity):
+class CheckProductConfiguration(Entity, BaseCRUDMixin):
     href: Optional[str] = None
     id: Optional[str] = None
     instantSync: bool = True
@@ -4408,6 +4411,12 @@ class CheckProductConfiguration(Entity):
         default_factory=list
     )
     contextEntity: Optional[EntityRef] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}/productConfiguration/v5/checkProductConfiguration"
+        )
 
     @classmethod
     def from_order(cls, product_order: ProductOrder) -> CheckProductConfiguration:
@@ -4483,6 +4492,63 @@ class CheckProductConfiguration(Entity):
             checkProductConfigurationItem=cpc_items,
         )
         return cpc
+
+
+@dataclass(repr=False)
+class QueryProductConfigurationItem(Entity):
+    id: Optional[str] = None
+    state: Optional[str] = None
+    stateReason: Optional[List[StateReason]] = field(default_factory=list)
+    productConfiguration: Optional[ProductConfiguration] = None
+    productConfigurationItemRelationship: Optional[
+        List[ProductConfigurationItemRelationship]
+    ] = field(default_factory=list)
+    queryProductConfigurationItem: Optional[List[QueryProductConfigurationItem]] = (
+        field(default_factory=list)
+    )
+    contextItem: Optional[ItemRef] = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        if not self.id:
+            raise ValueError(
+                "QueryProductConfigurationItem requires an id to be defined at instantiation"
+            )
+
+
+@dataclass(repr=False)
+class QueryProductConfiguration(Entity, BaseCRUDMixin):
+    """A task resource returning the constraints within which a product may be
+    configured, either for a new product offering or for an existing product
+    from inventory.
+
+    For new products the computed items carry the valid configuration
+    constraints; for existing products they carry the actions that may be
+    applied and, once an action is selected, the constraints for modifying it.
+    """
+
+    href: Optional[str] = None
+    id: Optional[str] = None
+    instantSync: bool = True
+    state: Optional[TaskStateType] = None
+    contextCharacteristic: Optional[List[Characteristic]] = field(default_factory=list)
+    channel: Optional[ChannelRef] = None
+    requestProductConfigurationItem: Optional[List[QueryProductConfigurationItem]] = (
+        field(default_factory=list)
+    )
+    computedProductConfigurationItem: Optional[List[QueryProductConfigurationItem]] = (
+        field(default_factory=list)
+    )
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    contextEntity: Optional[EntityRef] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}/productConfiguration/v5/queryProductConfiguration"
+        )
 
 
 @dataclass(repr=False)

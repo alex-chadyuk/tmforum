@@ -4,6 +4,41 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.11.0 — 2026-09-01
+
+Source spec: TMF679 Product Offering Qualification v5.0.0.
+
+Adds the geographic place sub-entities the TMF679 payloads reference but the
+SDK did not yet model, together with the calendar value objects they use.
+None of these are REST resources in the spec, so no `get_resource_path` is
+added and the supported-API table is unchanged. Fields are the union across
+each schema's base, `_FVO` and `_MVO` variants (identical in all seven cases —
+only `required` markers and variant-suffixed types differ); `_EVO` and `_RES`
+variants are not modelled.
+
+### New entities
+
+- `HourPeriod` — `startHour`, `endHour`
+- `CalendarPeriod` — `day`, `timeZone`, `hourPeriod`, `status`
+- `GeographicSubAddressUnit` — `subUnitNumber`, `subUnitType`
+- `GeographicSubAddress` — `id`, `href`, `name`, `buildingName`, `levelNumber`,
+  `levelType`, `privateStreetName`, `privateStreetNumber`, `subUnit`,
+  `subAddressType`
+- `GeographicSiteRelationship` — `id`, `href`, `role`, `relationshipType`,
+  `validFor`
+- `GeographicSiteFeature` (extends `Feature`) — `validFor`, `attachment`,
+  `note`, `relatedParty`, `featureCategory`. Note that `validFor` here is a
+  **list of `CalendarPeriod`**, not a `TimePeriod`, matching the spec.
+
+### New refs
+
+- `GeographicAddressRelationship` (extends `EntityRef`, referred type
+  `GeographicAddress`) — adds `relationshipType`
+
+### Changed
+
+- No existing classes were modified; no fields were added to existing entities.
+
 ## 0.10.0 — 2026-08-30
 
 Source spec: TMF676 Payment Management v4.0.0.

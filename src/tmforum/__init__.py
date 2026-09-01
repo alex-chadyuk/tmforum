@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 
 @dataclass
@@ -1519,6 +1519,12 @@ class GeographicAddressRef(EntityRef):
 
 
 @dataclass(repr=False)
+class GeographicAddressRelationship(EntityRef):
+    _referred_type: str = "GeographicAddress"
+    relationshipType: Optional[str] = None
+
+
+@dataclass(repr=False)
 class MarketingCampaignRef(EntityRef):
     _referred_type: str = "MarketingCampaign"
 
@@ -1939,6 +1945,20 @@ class TimePeriod(Entity):
         end_dt = datetime.fromisoformat(self.endDateTime.replace("Z", "+00:00"))
         delta = end_dt - start_dt
         return int(delta.total_seconds() * 1000)
+
+
+@dataclass(repr=False)
+class HourPeriod(Entity):
+    startHour: Optional[str] = None
+    endHour: Optional[str] = None
+
+
+@dataclass(repr=False)
+class CalendarPeriod(Entity):
+    day: Optional[str] = None
+    timeZone: Optional[str] = None
+    hourPeriod: Optional[List[HourPeriod]] = field(default_factory=list)
+    status: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -3327,6 +3347,35 @@ class GeographicLocation(Place):
 class GeographicSite(Place):
     def __post_init__(self):
         raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+
+
+@dataclass(repr=False)
+class GeographicSubAddressUnit(Entity):
+    subUnitNumber: Optional[str] = None
+    subUnitType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class GeographicSubAddress(Entity):
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    buildingName: Optional[str] = None
+    levelNumber: Optional[str] = None
+    levelType: Optional[str] = None
+    privateStreetName: Optional[str] = None
+    privateStreetNumber: Optional[str] = None
+    subUnit: Optional[List[GeographicSubAddressUnit]] = field(default_factory=list)
+    subAddressType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class GeographicSiteRelationship(Entity):
+    id: Optional[str] = None
+    href: Optional[str] = None
+    role: Optional[str] = None
+    relationshipType: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
 
 
 @dataclass(repr=False)
@@ -4829,6 +4878,17 @@ class FeatureRelationship(Entity):
     href: Optional[str] = None
     relationshipType: Optional[str] = None
     validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class GeographicSiteFeature(Feature):
+    validFor: Optional[List[CalendarPeriod]] = field(default_factory=list)
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    featureCategory: Optional[List[str]] = field(default_factory=list)
 
 
 @dataclass(repr=False)

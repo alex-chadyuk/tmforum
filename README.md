@@ -87,6 +87,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF676 Payment | `payment/v4` | `Payment`, `Refund`, `PaymentMethod`, `PaymentPlan` |
 | TMF936 Open Gateway Operate — Product Catalog | `openGatewayOperateAPIProductCatalog/v5` | `OpenGatewayProductOffering`, `OpenGatewayProductSpecification`, `ApiProductSpecification`, `UsageVolumeProductSpecification` |
 | TMF760 Product Configuration | `productConfiguration/v5` | `CheckProductConfiguration`, `QueryProductConfiguration`, `ProductConfiguration` |
+| TMF673 Geographic Address | `geographicAddressManagement/v4` | `GeographicAddress`, `GeographicAddressValidation`, `GeographicSubAddress`, `GeographicLocation` |
 
 ## How it works
 

@@ -4,6 +4,54 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.14.0 — 2026-09-01
+
+Source spec: TMF673 Geographic Address Management v4.0.0 (`info.version` 4.0.1).
+
+Implements the Geographic Address API. `GeographicAddress` and
+`GeographicLocation` existed only as `NotImplementedError` placeholders that
+raised on construction; both are now real dataclasses. This also makes two of
+the four arms of `RelatedPlaceRefOrValue.place` constructible for the first
+time — the union has referenced these classes all along.
+
+New entities:
+
+- `GeographicAddress` (`Place`, CRUD) — the 12 street/locality fields plus
+  `geographicLocation` and `geographicSubAddress`. Resource path
+  `geographicAddressManagement/v4/geographicAddress`. The API is read-only
+  (GET on the collection and on `{id}`); the CRUD mixin is attached for
+  consistency with every other resource in the SDK, so `create`/`update`/
+  `delete` will be rejected by a conformant server.
+- `GeographicAddressValidation` (CRUD) — the task resource the API is named
+  for: `submittedGeographicAddress` in, `validGeographicAddress` or
+  `alternateGeographicAddress` out, with `state` reusing the existing
+  `TaskStateType`. Resource path
+  `geographicAddressManagement/v4/geographicAddressValidation`. The spec's
+  `_Create` and `_Update` variants are strict subsets of the base schema and
+  add no fields, so they are folded into the single class.
+- `GeographicLocation` (`Place`) — replaces the stub; adds `bbox`.
+- `GeographicLocationRefOrValue` — the ref-or-value form referenced by
+  `GeographicAddress.geographicLocation`.
+- `GeographicLocationRef` — new `EntityRef`.
+
+Fields added to existing entities:
+
+- `GeographicSubAddress` — `subUnitNumber`, `subUnitType`. TMF673 v4 carries
+  these flat on the sub-address, while the v5 shape nests them under
+  `subUnit: List[GeographicSubAddressUnit]`; both now deserialize. `subUnit` is
+  unchanged.
+
+Not implemented: the GeoJSON layer (`GeoJsonPoint`, `GeoJsonPolygon`,
+`GeoJsonLineString`, `GeoJsonMultiPoint`, `GeoJsonMultiLineString` and their
+`Point`/`Polygon`/`LineString`/`MultiPoint`/`MultiLineString` payloads). A
+payload whose `geographicLocation` carries one of those `@type` values
+deserializes to a plain `dict` rather than an entity. Also skipped, per the
+SDK's standing convention: `Error`, `EventSubscription`,
+`GeographicAddressValidationStateChangeEvent`, and the `Addressable` /
+`Extensible` base schemas.
+
+`GeographicSite` remains a placeholder — it belongs to TMF674, not this spec.
+
 ## 0.13.0 — 2026-09-01
 
 Source spec: TMF760 Product Configuration v5.0.0.

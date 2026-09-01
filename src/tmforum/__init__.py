@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.13.0"
+__version__ = "0.14.0"
 
 
 @dataclass
@@ -1714,6 +1714,11 @@ class GeographicAddressRef(EntityRef):
 class GeographicAddressRelationship(EntityRef):
     _referred_type: str = "GeographicAddress"
     relationshipType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class GeographicLocationRef(EntityRef):
+    _referred_type: str = "GeographicLocation"
 
 
 @dataclass(repr=False)
@@ -3632,15 +3637,51 @@ class Place(Entity):
 
 
 @dataclass(repr=False)
-class GeographicAddress(Place):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+class GeographicLocation(Place):
+    bbox: Optional[List[float]] = field(default_factory=list)
 
 
 @dataclass(repr=False)
-class GeographicLocation(Place):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+class GeographicLocationRefOrValue(Entity):
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    bbox: Optional[List[float]] = field(default_factory=list)
+    _referred_type: Optional[str] = None
+
+
+@dataclass(repr=False)
+class GeographicAddress(Place, BaseCRUDMixin):
+    """A structured textual way of describing how to find a property in an
+    urban area, as defined by the TMF673 Geographic Address Management API.
+
+    The API exposes addresses read-only: they are looked up worldwide and
+    validated through :class:`GeographicAddressValidation` rather than created
+    directly.
+    """
+
+    city: Optional[str] = None
+    country: Optional[str] = None
+    locality: Optional[str] = None
+    postcode: Optional[str] = None
+    stateOrProvince: Optional[str] = None
+    streetName: Optional[str] = None
+    streetNr: Optional[str] = None
+    streetNrLast: Optional[str] = None
+    streetNrLastSuffix: Optional[str] = None
+    streetNrSuffix: Optional[str] = None
+    streetSuffix: Optional[str] = None
+    streetType: Optional[str] = None
+    geographicLocation: Optional[GeographicLocationRefOrValue] = None
+    geographicSubAddress: Optional[List[GeographicSubAddress]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}/geographicAddressManagement/v4/geographicAddress"
+        )
 
 
 @dataclass(repr=False)
@@ -3667,6 +3708,40 @@ class GeographicSubAddress(Entity):
     privateStreetNumber: Optional[str] = None
     subUnit: Optional[List[GeographicSubAddressUnit]] = field(default_factory=list)
     subAddressType: Optional[str] = None
+    subUnitNumber: Optional[str] = None
+    subUnitType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class GeographicAddressValidation(Entity, BaseCRUDMixin):
+    """A task resource used to validate a submitted geographic address against a
+    reference address system.
+
+    The submitted address is checked and, depending on the outcome recorded in
+    ``validationResult``, the task returns the corrected address in
+    ``validGeographicAddress`` or - when ``provideAlternative`` was requested and
+    the match was partial or failed - a list of candidates in
+    ``alternateGeographicAddress``.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    provideAlternative: Optional[bool] = None
+    validationDate: Optional[str] = None
+    validationResult: Optional[str] = None
+    state: Optional[TaskStateType] = None
+    submittedGeographicAddress: Optional[GeographicAddress] = None
+    validGeographicAddress: Optional[GeographicAddress] = None
+    alternateGeographicAddress: Optional[List[GeographicAddress]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}"
+            "/geographicAddressManagement/v4/geographicAddressValidation"
+        )
 
 
 @dataclass(repr=False)

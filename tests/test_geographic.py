@@ -3,7 +3,13 @@ from tmforum import (
     AttachmentRefOrValue,
     CalendarPeriod,
     Characteristic,
+    Context,
+    GeographicAddress,
     GeographicAddressRelationship,
+    GeographicAddressValidation,
+    GeographicLocation,
+    GeographicLocationRef,
+    GeographicLocationRefOrValue,
     GeographicSiteFeature,
     GeographicSiteRelationship,
     GeographicSubAddress,
@@ -12,6 +18,7 @@ from tmforum import (
     Note,
     PartyRoleRef,
     RelatedPartyRefOrPartyRoleRef,
+    TaskStateType,
     TimePeriod,
 )
 
@@ -276,3 +283,273 @@ def test_geographic_address_relationship(geographic_address_relationship_dict):
     assert address_relationship_dict["@type"] == "GeographicAddressRelationship"
     assert address_relationship_dict["@referredType"] == "GeographicAddress"
     assert address_relationship_dict["relationshipType"] == "isSubAddressOf"
+
+
+# TMF673 Geographic Address Management v4.0.0
+
+
+@pytest.fixture
+def geographic_address_dict():
+    address = {
+        "@type": "GeographicAddress",
+        "@baseType": "Place",
+        "id": "addr-9931",
+        "href": "/geographicAddressManagement/v4/geographicAddress/addr-9931",
+        "name": "Northgate Tower",
+        "streetNr": "42",
+        "streetNrSuffix": "B",
+        "streetNrLast": "48",
+        "streetNrLastSuffix": "D",
+        "streetName": "Campus Walk",
+        "streetType": "Avenue",
+        "streetSuffix": "North",
+        "locality": "Docklands",
+        "city": "Dublin",
+        "stateOrProvince": "Leinster",
+        "postcode": "D01 X4F2",
+        "country": "Ireland",
+        "geographicLocation": {
+            "@type": "GeographicLocationRefOrValue",
+            "id": "loc-7",
+            "href": "/geographicSiteManagement/v4/geographicLocation/loc-7",
+            "name": "Northgate Tower footprint",
+            "bbox": [-6.24, 53.34, -6.23, 53.35],
+            "@referredType": "GeographicLocation",
+        },
+        "geographicSubAddress": [
+            {
+                "@type": "GeographicSubAddress",
+                "id": "sub-9931-1",
+                "name": "Tower B, level 3",
+                "buildingName": "Northgate Tower",
+                "levelNumber": "3",
+                "levelType": "FLOOR",
+                "subAddressType": "subUnit",
+                "subUnitNumber": "12A",
+                "subUnitType": "FLAT",
+            }
+        ],
+    }
+    return address
+
+
+@pytest.fixture
+def geographic_address_1(geographic_address_dict):
+    return GeographicAddress.from_dict(geographic_address_dict)
+
+
+def test_geographic_address_instantiates_with_id(geographic_address_dict):
+    address = GeographicAddress.from_dict(geographic_address_dict)
+    assert address.id == "addr-9931"
+    assert address.city == "Dublin"
+    assert address.country == "Ireland"
+    assert address.postcode == "D01 X4F2"
+    assert address.streetNr == "42"
+    assert address.streetNrLastSuffix == "D"
+    assert address.streetType == "Avenue"
+    # inherited from Place
+    assert address.name == "Northgate Tower"
+
+
+def test_geographic_address_instantiates_classes(geographic_address_1):
+    assert isinstance(
+        geographic_address_1.geographicLocation, GeographicLocationRefOrValue
+    )
+    assert geographic_address_1.geographicLocation.bbox == [-6.24, 53.34, -6.23, 53.35]
+    assert (
+        geographic_address_1.geographicLocation._referred_type == "GeographicLocation"
+    )
+
+    sub_address = geographic_address_1.geographicSubAddress[0]
+    assert isinstance(sub_address, GeographicSubAddress)
+    assert sub_address.levelType == "FLOOR"
+
+
+def test_geographic_sub_address_carries_flat_sub_unit_fields(geographic_address_1):
+    """TMF673 v4 puts subUnitNumber/subUnitType flat on the sub-address, while
+    the v5 shape nests them under subUnit; both must survive from_dict."""
+    sub_address = geographic_address_1.geographicSubAddress[0]
+    assert sub_address.subUnitNumber == "12A"
+    assert sub_address.subUnitType == "FLAT"
+    assert sub_address.subUnit == []
+
+
+def test_geographic_address_to_dict_round_trip(geographic_address_1):
+    address_dict = geographic_address_1.to_dict()
+    assert address_dict["@type"] == "GeographicAddress"
+    assert address_dict["@baseType"] == "Place"
+    assert address_dict["city"] == "Dublin"
+
+    location = address_dict["geographicLocation"]
+    assert location["@type"] == "GeographicLocationRefOrValue"
+    assert location["@referredType"] == "GeographicLocation"
+    assert location["bbox"] == [-6.24, 53.34, -6.23, 53.35]
+
+    sub_address = address_dict["geographicSubAddress"][0]
+    assert sub_address["@type"] == "GeographicSubAddress"
+    assert sub_address["subUnitNumber"] == "12A"
+
+
+def test_geographic_address_raises_when_sub_address_not_a_list():
+    with pytest.raises(ValueError):
+        GeographicAddress(
+            name="Bad address",
+            geographicSubAddress=GeographicSubAddress(name="Tower B"),
+        )
+
+
+def test_geographic_address_resource_path():
+    context = Context(api_base_url="https://mycsp.com/tmf-api")
+    assert GeographicAddress.get_resource_path(context) == (
+        "https://mycsp.com/tmf-api/geographicAddressManagement/v4/geographicAddress"
+    )
+
+
+@pytest.fixture
+def geographic_location_dict():
+    location = {
+        "@type": "GeographicLocation",
+        "@baseType": "Place",
+        "id": "loc-7",
+        "href": "/geographicSiteManagement/v4/geographicLocation/loc-7",
+        "name": "Northgate Tower footprint",
+        "bbox": [-6.24, 53.34, -6.23, 53.35],
+    }
+    return location
+
+
+def test_geographic_location(geographic_location_dict):
+    location = GeographicLocation.from_dict(geographic_location_dict)
+    assert location.id == "loc-7"
+    assert location.name == "Northgate Tower footprint"
+    assert location.bbox == [-6.24, 53.34, -6.23, 53.35]
+
+    location_dict = location.to_dict()
+    assert location_dict["@type"] == "GeographicLocation"
+    assert location_dict["@baseType"] == "Place"
+    assert location_dict["bbox"] == [-6.24, 53.34, -6.23, 53.35]
+
+
+def test_geographic_location_raises_when_bbox_not_a_list():
+    with pytest.raises(ValueError):
+        GeographicLocation(name="Bad location", bbox=-6.24)
+
+
+def test_geographic_location_ref():
+    location_ref = GeographicLocationRef.from_dict(
+        {
+            "@type": "GeographicLocationRef",
+            "id": "loc-7",
+            "href": "/geographicSiteManagement/v4/geographicLocation/loc-7",
+            "name": "Northgate Tower footprint",
+        }
+    )
+    assert location_ref.id == "loc-7"
+    assert location_ref._referred_type == "GeographicLocation"
+
+    location_ref_dict = location_ref.to_dict()
+    assert location_ref_dict["@type"] == "GeographicLocationRef"
+    assert location_ref_dict["@referredType"] == "GeographicLocation"
+
+
+@pytest.fixture
+def geographic_address_validation_dict(geographic_address_dict):
+    validation = {
+        "@type": "GeographicAddressValidation",
+        "id": "val-556",
+        "href": "/geographicAddressManagement/v4/geographicAddressValidation/val-556",
+        "provideAlternative": True,
+        "validationDate": "2026-09-01T09:15:00.000Z",
+        "validationResult": "partial",
+        "state": "done",
+        "submittedGeographicAddress": {
+            "@type": "GeographicAddress",
+            "@baseType": "Place",
+            "streetNr": "42",
+            "streetName": "Campus Walk",
+            "city": "Dublin",
+            "country": "Ireland",
+        },
+        "validGeographicAddress": geographic_address_dict,
+        "alternateGeographicAddress": [
+            {
+                "@type": "GeographicAddress",
+                "@baseType": "Place",
+                "id": "addr-9932",
+                "streetNr": "44",
+                "streetName": "Campus Walk",
+                "city": "Dublin",
+                "postcode": "D01 X4F3",
+                "country": "Ireland",
+            }
+        ],
+    }
+    return validation
+
+
+@pytest.fixture
+def geographic_address_validation_1(geographic_address_validation_dict):
+    return GeographicAddressValidation.from_dict(geographic_address_validation_dict)
+
+
+def test_geographic_address_validation_instantiates_with_id(
+    geographic_address_validation_dict,
+):
+    validation = GeographicAddressValidation.from_dict(
+        geographic_address_validation_dict
+    )
+    assert validation.id == "val-556"
+    assert validation.provideAlternative is True
+    assert validation.validationResult == "partial"
+    assert validation.validationDate == "2026-09-01T09:15:00.000Z"
+
+
+def test_geographic_address_validation_instantiates_classes(
+    geographic_address_validation_1,
+):
+    assert geographic_address_validation_1.state == TaskStateType.DONE
+    assert isinstance(
+        geographic_address_validation_1.submittedGeographicAddress, GeographicAddress
+    )
+    assert isinstance(
+        geographic_address_validation_1.validGeographicAddress, GeographicAddress
+    )
+    assert geographic_address_validation_1.validGeographicAddress.postcode == "D01 X4F2"
+
+    alternates = geographic_address_validation_1.alternateGeographicAddress
+    assert isinstance(alternates[0], GeographicAddress)
+    assert alternates[0].streetNr == "44"
+
+
+def test_geographic_address_validation_to_dict_round_trip(
+    geographic_address_validation_1,
+):
+    validation_dict = geographic_address_validation_1.to_dict()
+    assert validation_dict["@type"] == "GeographicAddressValidation"
+    # direct Entity subclasses do not carry an "@baseType" discriminator
+    assert "@baseType" not in validation_dict
+    assert validation_dict["state"] == "done"
+    assert validation_dict["provideAlternative"] is True
+
+    submitted = validation_dict["submittedGeographicAddress"]
+    assert submitted["@type"] == "GeographicAddress"
+    assert submitted["@baseType"] == "Place"
+    assert submitted["streetName"] == "Campus Walk"
+
+    assert validation_dict["alternateGeographicAddress"][0]["postcode"] == "D01 X4F3"
+
+
+def test_geographic_address_validation_raises_when_alternates_not_a_list():
+    with pytest.raises(ValueError):
+        GeographicAddressValidation(
+            validationResult="partial",
+            alternateGeographicAddress=GeographicAddress(city="Dublin"),
+        )
+
+
+def test_geographic_address_validation_resource_path():
+    context = Context(api_base_url="https://mycsp.com/tmf-api")
+    assert GeographicAddressValidation.get_resource_path(context) == (
+        "https://mycsp.com/tmf-api"
+        "/geographicAddressManagement/v4/geographicAddressValidation"
+    )

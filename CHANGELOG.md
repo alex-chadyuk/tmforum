@@ -4,6 +4,38 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.15.0 — 2026-09-01
+
+Source spec: TMF674 Geographic Site v5.0.0.
+
+Implements the Geographic Site API. `GeographicSite` existed only as a
+`NotImplementedError` placeholder that raised on construction; it is now a real
+CRUD dataclass. This makes the third arm of `RelatedPlaceRefOrValue.place`
+constructible — the union has referenced the class all along.
+
+New entities:
+
+- `GeographicSite` (`Place`, CRUD) — a managed place such as a retail store,
+  warehouse or data centre. Adds `code` (deprecated in the spec),
+  `creationDate`, `status`, `siteCategory`, `externalIdentifier`, `note`,
+  `capacity`, `relatedParty`, `calendar`, `relatedAddress`, `relatedLocation`,
+  `geographicSiteRelationship`, `contactMedium` and `siteFeature` on top of the
+  `Place` base. Resource path `geographicSiteManagement/v5/geographicSite`.
+- `RelatedGeographicAddressRef` (`Entity`) — `role` plus a `GeographicAddressRef`,
+  for addresses used in a named context (`delivery-address`, `office-address`).
+- `RelatedGeographicLocationRef` (`Entity`) — `role` plus a
+  `GeographicLocationRef` (`retail-complex`, `service-access`).
+
+Fields added to existing classes:
+
+- `GeographicSiteRelationship` — `name`, `associationSpec` (`EntityRef`) and
+  `_referred_type`, completing the spec's `EntityRelationship` base.
+
+Notes on deliberate non-changes: the spec places `externalIdentifier` on the
+abstract `Place`, but it is declared on `GeographicSite` so the wire shape of
+`GeographicAddress` and `GeographicLocation` is untouched. The spec's
+`DayOfWeekType` enum is not added — `CalendarPeriod.day` stays `str`.
+
 ## 0.14.0 — 2026-09-01
 
 Source spec: TMF673 Geographic Address Management v4.0.0 (`info.version` 4.0.1).

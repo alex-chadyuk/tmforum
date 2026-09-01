@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"
 
 
 @dataclass
@@ -3685,9 +3685,43 @@ class GeographicAddress(Place, BaseCRUDMixin):
 
 
 @dataclass(repr=False)
-class GeographicSite(Place):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+class GeographicSite(Place, BaseCRUDMixin):
+    """A managed place - such as a retail store, warehouse or data centre - as
+    defined by the TMF674 Geographic Site Management API.
+
+    A site is described by the parties responsible for it (``relatedParty``), a
+    calendar of access or opening periods (``calendar``), and any number of
+    addresses and locations distinguished by ``role`` (``relatedAddress``,
+    ``relatedLocation``). Unstructured site information, from survey data to
+    hazard and safety guidelines, is carried in ``siteFeature``.
+    """
+
+    code: Optional[str] = None  # deprecated; use id, externalIdentifier or name
+    creationDate: Optional[str] = None
+    status: Optional[str] = None
+    siteCategory: Optional[str] = None
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    capacity: Optional[List[Quantity]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    calendar: Optional[List[CalendarPeriod]] = field(default_factory=list)
+    relatedAddress: Optional[List[RelatedGeographicAddressRef]] = field(
+        default_factory=list
+    )
+    relatedLocation: Optional[List[RelatedGeographicLocationRef]] = field(
+        default_factory=list
+    )
+    geographicSiteRelationship: Optional[List[GeographicSiteRelationship]] = field(
+        default_factory=list
+    )
+    contactMedium: Optional[List[ContactMedium]] = field(default_factory=list)
+    siteFeature: Optional[List[GeographicSiteFeature]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/geographicSiteManagement/v5/geographicSite"
 
 
 @dataclass(repr=False)
@@ -3748,9 +3782,24 @@ class GeographicAddressValidation(Entity, BaseCRUDMixin):
 class GeographicSiteRelationship(Entity):
     id: Optional[str] = None
     href: Optional[str] = None
+    name: Optional[str] = None
     role: Optional[str] = None
     relationshipType: Optional[str] = None
     validFor: Optional[TimePeriod] = None
+    associationSpec: Optional[EntityRef] = None
+    _referred_type: Optional[str] = None
+
+
+@dataclass(repr=False)
+class RelatedGeographicAddressRef(Entity):
+    role: Optional[str] = None
+    address: Optional[GeographicAddressRef] = None
+
+
+@dataclass(repr=False)
+class RelatedGeographicLocationRef(Entity):
+    role: Optional[str] = None
+    location: Optional[GeographicLocationRef] = None
 
 
 @dataclass(repr=False)

@@ -4,12 +4,17 @@ from tmforum import (
     CalendarPeriod,
     Characteristic,
     Context,
+    EmailContactMedium,
+    EntityRef,
+    ExternalIdentifier,
     GeographicAddress,
+    GeographicAddressRef,
     GeographicAddressRelationship,
     GeographicAddressValidation,
     GeographicLocation,
     GeographicLocationRef,
     GeographicLocationRefOrValue,
+    GeographicSite,
     GeographicSiteFeature,
     GeographicSiteRelationship,
     GeographicSubAddress,
@@ -17,6 +22,10 @@ from tmforum import (
     HourPeriod,
     Note,
     PartyRoleRef,
+    PhoneContactMedium,
+    Quantity,
+    RelatedGeographicAddressRef,
+    RelatedGeographicLocationRef,
     RelatedPartyRefOrPartyRoleRef,
     TaskStateType,
     TimePeriod,
@@ -552,4 +561,247 @@ def test_geographic_address_validation_resource_path():
     assert GeographicAddressValidation.get_resource_path(context) == (
         "https://mycsp.com/tmf-api"
         "/geographicAddressManagement/v4/geographicAddressValidation"
+    )
+
+
+@pytest.fixture
+def geographic_site_dict():
+    site = {
+        "@type": "GeographicSite",
+        "@baseType": "Place",
+        "id": "site-4711",
+        "href": "/geographicSiteManagement/v5/geographicSite/site-4711",
+        "name": "Northgate Distribution Centre",
+        "description": "A three-storey warehouse with a retail counter",
+        "code": "BTS",
+        "status": "active",
+        "siteCategory": "Warehouse",
+        "creationDate": "2024-09-23T00:00:00Z",
+        "lastUpdate": "2024-10-03T00:00:00Z",
+        "externalIdentifier": [
+            {
+                "@type": "ExternalIdentifier",
+                "externalIdentifierType": "assetRegister",
+                "owner": "FacilitiesCo",
+                "id": "ext-88",
+                "value": "NDC-0001",
+            }
+        ],
+        "capacity": [
+            {"@type": "Quantity", "units": "racks", "amount": 240},
+            {"@type": "Quantity", "units": "people", "amount": 85},
+        ],
+        "note": [
+            {
+                "@type": "Note",
+                "id": "note-01",
+                "author": "Site Manager",
+                "date": "2025-01-14T08:00:00Z",
+                "text": "Loading bay 3 is out of service until March",
+            }
+        ],
+        "calendar": [
+            {
+                "@type": "CalendarPeriod",
+                "@baseType": "Entity",
+                "day": "weekdays",
+                "timeZone": "+01:00",
+                "status": "available",
+                "hourPeriod": [
+                    {
+                        "@type": "HourPeriod",
+                        "startHour": "06:00",
+                        "endHour": "22:00",
+                    }
+                ],
+            }
+        ],
+        "contactMedium": [
+            {
+                "@type": "EmailContactMedium",
+                "@baseType": "ContactMedium",
+                "id": "cm-01",
+                "preferred": True,
+                "emailAddress": "ndc.reception@example.com",
+            },
+            {
+                "@type": "PhoneContactMedium",
+                "@baseType": "ContactMedium",
+                "id": "cm-02",
+                "preferred": False,
+                "phoneNumber": "+353-1-555-0199",
+            },
+        ],
+        "relatedParty": [
+            {
+                "@type": "RelatedPartyRefOrPartyRoleRef",
+                "role": "siteManager",
+                "partyOrPartyRole": {
+                    "@type": "PartyRoleRef",
+                    "id": "role-19",
+                    "name": "Ilse Vermeulen",
+                    "@referredType": "PartyRole",
+                },
+            }
+        ],
+        "relatedAddress": [
+            {
+                "@type": "RelatedGeographicAddressRef",
+                "role": "delivery-address",
+                "address": {
+                    "@type": "GeographicAddressRef",
+                    "id": "addr-77",
+                    "name": "Unit 4, Campus Walk",
+                    "@referredType": "GeographicAddress",
+                },
+            }
+        ],
+        "relatedLocation": [
+            {
+                "@type": "RelatedGeographicLocationRef",
+                "role": "service-access",
+                "location": {
+                    "@type": "GeographicLocationRef",
+                    "id": "loc-31",
+                    "name": "North gate manhole",
+                    "@referredType": "GeographicLocation",
+                },
+            }
+        ],
+        "geographicSiteRelationship": [
+            {
+                "@type": "GeographicSiteRelationship",
+                "id": "site-88",
+                "role": "backupSite",
+                "relationshipType": "isBackupOf",
+                "name": "Southgate Depot",
+                "@referredType": "GeographicSite",
+                "associationSpec": {
+                    "@type": "EntityRef",
+                    "id": "assoc-2",
+                    "name": "site-backup-spec",
+                },
+                "validFor": {
+                    "startDateTime": "2025-07-18T00:00:00Z",
+                    "endDateTime": "2025-12-31T00:00:00Z",
+                },
+            }
+        ],
+        "siteFeature": [
+            {
+                "@type": "GeographicSiteFeature",
+                "@baseType": "Feature",
+                "id": "feat-09",
+                "name": "Hazard information",
+                "isEnabled": True,
+                "featureCategory": ["Safety"],
+                "featureCharacteristic": [
+                    {
+                        "@type": "Characteristic",
+                        "name": "hazmatClass",
+                        "value": "3",
+                    }
+                ],
+            }
+        ],
+    }
+    return site
+
+
+@pytest.fixture
+def geographic_site_1(geographic_site_dict):
+    return GeographicSite.from_dict(geographic_site_dict)
+
+
+def test_geographic_site_instantiates_with_id(geographic_site_1):
+    assert geographic_site_1.id == "site-4711"
+    assert geographic_site_1.name == "Northgate Distribution Centre"
+    assert geographic_site_1.code == "BTS"
+    assert geographic_site_1.status == "active"
+    assert geographic_site_1.siteCategory == "Warehouse"
+    assert geographic_site_1.creationDate == "2024-09-23T00:00:00Z"
+    assert geographic_site_1.lastUpdate == "2024-10-03T00:00:00Z"
+
+
+def test_geographic_site_instantiates_classes(geographic_site_1):
+    assert isinstance(geographic_site_1.externalIdentifier[0], ExternalIdentifier)
+    assert isinstance(geographic_site_1.capacity[0], Quantity)
+    assert isinstance(geographic_site_1.note[0], Note)
+    assert isinstance(geographic_site_1.calendar[0], CalendarPeriod)
+    assert isinstance(geographic_site_1.calendar[0].hourPeriod[0], HourPeriod)
+    assert isinstance(geographic_site_1.siteFeature[0], GeographicSiteFeature)
+    assert isinstance(
+        geographic_site_1.siteFeature[0].featureCharacteristic[0], Characteristic
+    )
+
+    contact_media = geographic_site_1.contactMedium
+    assert isinstance(contact_media[0], EmailContactMedium)
+    assert isinstance(contact_media[1], PhoneContactMedium)
+    assert contact_media[0].emailAddress == "ndc.reception@example.com"
+    assert contact_media[1].phoneNumber == "+353-1-555-0199"
+
+    related_party = geographic_site_1.relatedParty[0]
+    assert isinstance(related_party, RelatedPartyRefOrPartyRoleRef)
+    assert isinstance(related_party.partyOrPartyRole, PartyRoleRef)
+
+    related_address = geographic_site_1.relatedAddress[0]
+    assert isinstance(related_address, RelatedGeographicAddressRef)
+    assert isinstance(related_address.address, GeographicAddressRef)
+    assert related_address.role == "delivery-address"
+
+    related_location = geographic_site_1.relatedLocation[0]
+    assert isinstance(related_location, RelatedGeographicLocationRef)
+    assert isinstance(related_location.location, GeographicLocationRef)
+    assert related_location.role == "service-access"
+
+    relationship = geographic_site_1.geographicSiteRelationship[0]
+    assert isinstance(relationship, GeographicSiteRelationship)
+    assert isinstance(relationship.associationSpec, EntityRef)
+    assert isinstance(relationship.validFor, TimePeriod)
+    assert relationship.name == "Southgate Depot"
+    assert relationship._referred_type == "GeographicSite"
+
+
+def test_geographic_site_capacity_values(geographic_site_1):
+    capacities = {q.units: q.amount for q in geographic_site_1.capacity}
+    assert capacities == {"racks": 240, "people": 85}
+
+
+def test_geographic_site_to_dict_round_trip(geographic_site_1):
+    site_dict = geographic_site_1.to_dict()
+    assert site_dict["@type"] == "GeographicSite"
+    assert site_dict["@baseType"] == "Place"
+    assert site_dict["siteCategory"] == "Warehouse"
+
+    assert site_dict["contactMedium"][0]["@type"] == "EmailContactMedium"
+    assert site_dict["contactMedium"][0]["@baseType"] == "ContactMedium"
+
+    related_address = site_dict["relatedAddress"][0]
+    assert related_address["@type"] == "RelatedGeographicAddressRef"
+    assert related_address["address"]["@referredType"] == "GeographicAddress"
+
+    related_location = site_dict["relatedLocation"][0]
+    assert related_location["location"]["@type"] == "GeographicLocationRef"
+
+    relationship = site_dict["geographicSiteRelationship"][0]
+    assert relationship["@referredType"] == "GeographicSite"
+    assert relationship["associationSpec"]["id"] == "assoc-2"
+
+    site_feature = site_dict["siteFeature"][0]
+    assert site_feature["@type"] == "GeographicSiteFeature"
+    assert site_feature["@baseType"] == "Feature"
+
+
+def test_geographic_site_raises_when_calendar_not_a_list():
+    with pytest.raises(ValueError):
+        GeographicSite(
+            name="Bad site",
+            calendar=CalendarPeriod(day="mon", status="available"),
+        )
+
+
+def test_geographic_site_resource_path():
+    context = Context(api_base_url="https://mycsp.com/tmf-api")
+    assert GeographicSite.get_resource_path(context) == (
+        "https://mycsp.com/tmf-api/geographicSiteManagement/v5/geographicSite"
     )

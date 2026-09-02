@@ -4,6 +4,37 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.16.0 — 2026-09-02
+
+Source spec: TMF666 Account Management v5.0.0.
+
+Completes the Account Management resource surface. Of the seven CRUD resources
+the spec defines, only three were reachable through `BaseCRUDMixin`;
+`SettlementAccount` was absent entirely and `PartyAccount`, `BillFormat` and
+`BillPresentationMedia` existed as value objects with no REST access.
+
+New entities:
+
+- `SettlementAccount` (`PartyAccount`, CRUD) — a party account used for
+  settlement purposes. The spec defines it as a pure specialization of
+  `PartyAccount` with no additional properties, so it adds only the resource
+  path `accountManagement/v5/settlementAccount`.
+
+Fields added to existing entities:
+
+- `BillFormat` — `description`, `id`, `href`
+- `BillPresentationMedia` — `description`, `id`, `href`
+
+CRUD support added to existing entities:
+
+- `PartyAccount` → `accountManagement/v5/partyAccount`
+- `BillFormat` → `accountManagement/v5/billFormat`
+- `BillPresentationMedia` → `accountManagement/v5/billPresentationMedia`
+
+`PartyAccount` gaining `BaseCRUDMixin` leaves the MRO of its existing subclass
+`BillingAccount` unchanged in resolution order and does not alter its resource
+path.
+
 ## 0.15.0 — 2026-09-01
 
 Source spec: TMF674 Geographic Site v5.0.0.

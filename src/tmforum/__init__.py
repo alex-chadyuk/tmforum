@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.15.0"
+__version__ = "0.16.0"
 
 
 @dataclass
@@ -4027,17 +4027,31 @@ class BillingCycleSpecification(Entity, BaseCRUDMixin):
 
 
 @dataclass(repr=False)
-class BillFormat(Entity):
+class BillFormat(Entity, BaseCRUDMixin):
     name: Optional[str] = None
     templateEngine: Optional[str] = None
     templateHref: Optional[str] = None
     basePresentationType: Optional[str] = None
+    description: Optional[str] = None
+    id: Optional[str] = None
+    href: Optional[str] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/accountManagement/v5/billFormat"
 
 
 @dataclass(repr=False)
-class BillPresentationMedia(Entity):
+class BillPresentationMedia(Entity, BaseCRUDMixin):
     name: Optional[str] = None
     basePresentationType: Optional[str] = None
+    description: Optional[str] = None
+    id: Optional[str] = None
+    href: Optional[str] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/accountManagement/v5/billPresentationMedia"
 
 
 @dataclass(repr=False)
@@ -4222,12 +4236,16 @@ class Account(Entity):
 
 
 @dataclass(repr=False)
-class PartyAccount(Account):
+class PartyAccount(Account, BaseCRUDMixin):
     paymentStatus: Optional[PaymentStatus] = None
     financialAccount: Optional[FinancialAccountRef] = None
     billStructure: Optional[BillStructure] = None
     paymentPlan: Optional[List[PaymentPlan]] = field(default_factory=list)
     defaultPaymentMethod: Optional[PaymentMethodRef] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/accountManagement/v5/partyAccount"
 
 
 @dataclass(repr=False)
@@ -4239,6 +4257,15 @@ class BillingAccount(PartyAccount, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/accountManagement/v5/billingAccount"
+
+
+@dataclass(repr=False)
+class SettlementAccount(PartyAccount, BaseCRUDMixin):
+    """A party account used for settlement purposes (TMF666)."""
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/accountManagement/v5/settlementAccount"
 
 
 @dataclass(repr=False)

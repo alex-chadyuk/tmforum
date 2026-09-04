@@ -4,6 +4,47 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.22.0 — 2026-09-04
+
+Source spec: TMF663 Shopping Cart v5.0.0.
+
+First coverage of the Shopping Cart API. `ShoppingCart` is the single REST resource in
+TMF663; its supporting cart model (items, prices, terms, relationships) is new, while
+the price, party, note and product refs it leans on were already present from TMF620,
+TMF632/669 and TMF637.
+
+### Added
+
+- `ShoppingCart` (CRUD, `shoppingCart/v5/shoppingCart`) — the temporary selection and
+  reservation of product offerings used in e-commerce, call centre and retail purchase
+  flows. Fields: `id`, `href`, `validFor`, `creationDate`, `lastUpdate`,
+  `contactMedium`, `cartItem`, `cartTotalPrice`, `relatedParty`.
+- `CartItem` — an identified part of a shopping cart, holding the offering or product
+  being purchased along with its pricing. Recursive via `cartItem` for bundled
+  offerings. Fields: `id`, `action`, `quantity`, `status`, `itemTerm`, `cartItem`,
+  `note`, `itemPrice`, `itemTotalPrice`, `product`, `productOffering`,
+  `cartItemRelationship`.
+- `CartPrice` — an amount representing the price paid for a cart or cart item. Fields:
+  `description`, `name`, `priceType`, `productOfferingPrice`, `recurringChargePeriod`,
+  `unitOfMeasure`, `price`, `priceAlteration`.
+- `CartTerm` — commitment term attached to a cart item (`description`, `name`,
+  `duration`).
+- `CartItemRelationship` — non-hierarchical relationship between cart items, such as
+  `relyOn`, `dependentOn` or `shipping` (`id`, `relationshipType`).
+- `CartItemActionType` enum — `add`, `modify`, `delete`, `noChange`.
+- `CartItemStatusType` enum — `active`, `saveForLater`; `saveForLater` items are
+  excluded from cart totals.
+
+### Notes
+
+- `CartItem.product` is typed `Union[Product, ProductRef]`, the package's existing
+  idiom for the spec's `ProductRefOrValue`; no new class was introduced.
+- TMF663 types `CartPrice.priceType` and `CartPrice.recurringChargePeriod` as free
+  strings. They are annotated here with the shared `PriceType` and
+  `RecurringChargePeriod` enums for consistency with every other price class in the
+  package; values outside those enums (`"allowance"`, `"week"`, …) are preserved
+  as plain strings through `from_dict`/`to_dict`.
+
 ## 0.21.0 — 2026-09-04
 
 Source spec: TMF629 Customer Management v5.0.1.

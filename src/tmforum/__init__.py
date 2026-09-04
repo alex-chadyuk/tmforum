@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.21.0"
+__version__ = "0.22.0"
 
 
 @dataclass
@@ -607,6 +607,20 @@ class BillFormatBasePresentationType(enum.Enum):
 class BundledProductOfferingPriceRelationshipTypeEnum(enum.Enum):
     NULLIFY = "nullify"
     COMPOSED_OF = "composedOf"
+
+
+@enum.unique
+class CartItemActionType(enum.Enum):
+    ADD = "add"
+    MODIFY = "modify"
+    DELETE = "delete"
+    NO_CHANGE = "noChange"
+
+
+@enum.unique
+class CartItemStatusType(enum.Enum):
+    ACTIVE = "active"
+    SAVE_FOR_LATER = "saveForLater"
 
 
 @enum.unique
@@ -6987,3 +7001,71 @@ class EvaluateFraudRisk(TaskResource, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/fraudManagement/v5/evaluateFraudRisk"
+
+
+@dataclass(repr=False)
+class CartTerm(Entity):
+    description: Optional[str] = None
+    name: Optional[str] = None
+    duration: Optional[Duration] = None
+
+
+@dataclass(repr=False)
+class CartItemRelationship(Entity):
+    id: Optional[str] = None
+    relationshipType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class CartPrice(Entity):
+    description: Optional[str] = None
+    name: Optional[str] = None
+    priceType: Optional[PriceType] = None
+    productOfferingPrice: Optional[ProductOfferingPriceRef] = None
+    recurringChargePeriod: Optional[RecurringChargePeriod] = None
+    unitOfMeasure: Optional[str] = None
+    price: Optional[Price] = None
+    priceAlteration: Optional[List[PriceAlteration]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class CartItem(Entity):
+    id: Optional[str] = None
+    action: Optional[CartItemActionType] = None
+    quantity: Optional[int] = None
+    status: Optional[CartItemStatusType] = None
+    itemTerm: Optional[List[CartTerm]] = field(default_factory=list)
+    cartItem: Optional[List[CartItem]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    itemPrice: Optional[List[CartPrice]] = field(default_factory=list)
+    itemTotalPrice: Optional[List[CartPrice]] = field(default_factory=list)
+    product: Optional[Union[Product, ProductRef]] = None
+    productOffering: Optional[ProductOfferingRef] = None
+    cartItemRelationship: Optional[List[CartItemRelationship]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(repr=False)
+class ShoppingCart(Entity, BaseCRUDMixin):
+    """A temporary selection and reservation of product offerings (TMF663).
+
+    Used in e-commerce, call centre and retail purchase flows for both physical
+    and digital goods and services. A shopping cart holds a list of cart items,
+    a reference to the customer (party or party role) — or a contact medium when
+    the customer does not yet exist — and the total price of its active items.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    contactMedium: Optional[List[ContactMedium]] = field(default_factory=list)
+    cartItem: Optional[List[CartItem]] = field(default_factory=list)
+    cartTotalPrice: Optional[List[CartPrice]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyOrPartyRole]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/shoppingCart/v5/shoppingCart"

@@ -92,6 +92,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF674 Geographic Site | `geographicSiteManagement/v5` | `GeographicSite`, `GeographicSiteFeature`, `GeographicSiteRelationship` |
 | TMF767 Product Usage Catalog | `productUsageCatalogManagement/v5` | `ProductUsageSpecification` |
 | TMF770 Fraud Management | `fraudManagement/v5` | `EvaluateFraudRisk` |
+| TMF663 Shopping Cart | `shoppingCart/v5` | `ShoppingCart`, `CartItem`, `CartPrice`, `CartTerm` |
 
 ## How it works
 

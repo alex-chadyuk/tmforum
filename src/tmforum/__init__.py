@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 
 @dataclass
@@ -3389,6 +3389,22 @@ class Organization(Party, BaseCRUDMixin):
     def get_resource_path(cls, context: Context) -> str:
         """Returns the endpoint path for organization operations (creation, retrieval, updates, deletions)."""
         return f"{context.api_base_url}/partyManagement/v5/organization"
+
+
+@dataclass(repr=False)
+class Customer(PartyRole):
+    """Represents a Customer entity in the TM Forum Customer Management API.
+
+    A Customer is the party role played by a party that buys products and
+    services from the enterprise. It carries no attributes of its own beyond
+    those of :class:`PartyRole`, but is exposed as its own REST resource by
+    TMF629, so it defines its own resource path.
+    """
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        """Returns the endpoint path for customer operations (creation, retrieval, updates, deletions)."""
+        return f"{context.api_base_url}/customerManagement/v5/customer"
 
 
 @dataclass(repr=False)

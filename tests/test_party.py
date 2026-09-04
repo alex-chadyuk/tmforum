@@ -9,6 +9,7 @@ from tmforum import (
     Consumer,
     Context,
     CreditProfile,
+    Customer,
     Disability,
     EmailContactMedium,
     ExternalIdentifier,
@@ -296,6 +297,61 @@ def supplier_1(party_role_dict):
     return PartyRole.from_dict(party_role_dict)
 
 
+@pytest.fixture
+def customer_dict():
+    return {
+        "@type": "Customer",
+        "@baseType": "PartyRole",
+        "id": "cust-01",
+        "href": "/customerManagement/v5/customer/cust-01",
+        "name": "Acme Retail",
+        "description": "Enterprise broadband customer",
+        "status": "active",
+        "statusReason": "Onboarding complete",
+        "validFor": {"startDateTime": "2025-02-01T00:00:00Z"},
+        "engagedParty": {"@type": "OrganizationRef", "id": "org-42"},
+        "partyRoleSpecification": {
+            "@type": "PartyRoleSpecificationRef",
+            "id": "spec-cust-01",
+            "name": "Customer role spec",
+        },
+        "agreement": [{"@type": "AgreementRef", "id": "agr-77"}],
+        "account": [{"@type": "AccountRef", "id": "acc-77"}],
+        "paymentMethod": [{"@type": "PaymentMethodRef", "id": "pm-77"}],
+        "creditProfile": [
+            {
+                "@type": "CreditProfile",
+                "creditProfileDate": "2025-02-01T00:00:00Z",
+                "creditRiskRating": 1,
+                "creditScore": 745,
+                "validFor": {"startDateTime": "2025-02-01T00:00:00Z"},
+            }
+        ],
+        "characteristic": [
+            {
+                "@type": "StringArrayCharacteristic",
+                "name": "segments",
+                "value": ["enterprise", "priority"],
+            }
+        ],
+        "contactMedium": [
+            {"@type": "EmailContactMedium", "emailAddress": "billing@acme.com"}
+        ],
+        "relatedParty": [
+            {
+                "@type": "RelatedPartyOrPartyRole",
+                "role": "accountManager",
+                "partyOrPartyRole": {"@type": "PartyRoleRef", "id": "role-88"},
+            }
+        ],
+    }
+
+
+@pytest.fixture
+def customer_1(customer_dict):
+    return PartyRole.from_dict(customer_dict)
+
+
 def test_individual_from_dict(individual_1):
     assert isinstance(individual_1, Individual)
     assert individual_1.id == "3644-4dfd"
@@ -464,4 +520,55 @@ def test_party_resource_paths_are_v5():
     assert (
         Organization.get_resource_path(context)
         == "https://mycsp.com/tmf-api/partyManagement/v5/organization"
+    )
+
+
+def test_customer_resolves_via_type_discriminator(customer_1):
+    assert isinstance(customer_1, Customer)
+    assert isinstance(customer_1, PartyRole)
+    assert customer_1.name == "Acme Retail"
+    assert customer_1.status == "active"
+    assert customer_1.statusReason == "Onboarding complete"
+    assert isinstance(customer_1.validFor, TimePeriod)
+    assert isinstance(customer_1.engagedParty, OrganizationRef)
+    assert isinstance(customer_1.partyRoleSpecification, PartyRoleSpecificationRef)
+    assert isinstance(customer_1.agreement[0], AgreementRef)
+    assert isinstance(customer_1.account[0], AccountRef)
+    assert isinstance(customer_1.paymentMethod[0], PaymentMethodRef)
+    assert isinstance(customer_1.creditProfile[0], CreditProfile)
+    assert customer_1.creditProfile[0].creditScore == 745
+    assert isinstance(customer_1.creditProfile[0].validFor, TimePeriod)
+    assert isinstance(customer_1.characteristic[0], StringArrayCharacteristic)
+    assert customer_1.characteristic[0].value == ["enterprise", "priority"]
+    assert isinstance(customer_1.contactMedium[0], EmailContactMedium)
+    assert isinstance(customer_1.relatedParty[0], RelatedPartyOrPartyRole)
+    assert isinstance(customer_1.relatedParty[0].partyOrPartyRole, PartyRoleRef)
+
+
+def test_customer_to_dict_round_trip(customer_1):
+    d = customer_1.to_dict()
+    assert d["@type"] == "Customer"
+    assert d["@baseType"] == "PartyRole"
+    assert d["creditProfile"][0]["@type"] == "CreditProfile"
+    assert d["partyRoleSpecification"]["@type"] == "PartyRoleSpecificationRef"
+    assert d["characteristic"][0]["@type"] == "StringArrayCharacteristic"
+
+    round_tripped = Customer.from_dict(d)
+    assert isinstance(round_tripped, Customer)
+    assert round_tripped.engagedParty.id == "org-42"
+
+
+def test_customer_raises_when_contact_medium_not_a_list():
+    with pytest.raises(ValueError):
+        Customer(
+            name="Acme Retail",
+            contactMedium=EmailContactMedium(emailAddress="billing@acme.com"),
+        )
+
+
+def test_customer_resource_path_is_v5():
+    context = Context(api_base_url="https://mycsp.com/tmf-api")
+    assert (
+        Customer.get_resource_path(context)
+        == "https://mycsp.com/tmf-api/customerManagement/v5/customer"
     )

@@ -4,6 +4,36 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.21.0 — 2026-09-04
+
+Source spec: TMF629 Customer Management v5.0.1.
+
+First coverage of the Customer Management API. The whole supporting party-role model
+was already present from TMF669; the missing piece was the `Customer` role itself and
+its own REST resource.
+
+### Added
+
+- `Customer` (CRUD, `customerManagement/v5/customer`) — the party role played by a
+  party that buys products and services from the enterprise. In TMF629 `Customer` is
+  defined as `allOf: [PartyRole]` with no additional attributes, so it extends the
+  existing `PartyRole` and inherits its full field set (`engagedParty`,
+  `partyRoleSpecification`, `account`, `agreement`, `contactMedium`, `paymentMethod`,
+  `creditProfile`, `relatedParty`, `characteristic`, `status`, `statusReason`,
+  `validFor`). Unlike the other `PartyRole` subtypes it overrides `get_resource_path`,
+  because TMF629 exposes `/customer` as a first-class resource (GET, POST, PATCH,
+  DELETE) rather than serving it through `partyRoleManagement`.
+
+### Notes
+
+- No new refs, enums or sub-entities were required: every schema in the TMF629
+  `Customer` dependency tree (`PartyRef`, `PartyRoleSpecificationRef`, `AccountRef`,
+  `AgreementRef`, `PaymentMethodRef`, `Characteristic`, `ContactMedium`,
+  `CreditProfile`, `RelatedPartyOrPartyRole`, `TimePeriod`) was already implemented and
+  field-complete.
+- `PartyRole.role` remains typed as `RoleEnum` rather than the spec's plain `string`;
+  the existing SDK typing takes precedence and `Customer` inherits it.
+
 ## 0.20.0 — 2026-09-04
 
 Source spec: TMF770 Fraud Management v5.0.0.

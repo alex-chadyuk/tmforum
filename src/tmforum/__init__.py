@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.16.0"
+__version__ = "0.17.0"
 
 
 @dataclass
@@ -673,6 +673,30 @@ class CommercialRelationshipTypeEnum(enum.Enum):
 class ConnectionAssociationType(enum.Enum):
     POINT_TO_POINT = "pointtoPoint"
     POINT_TO_MULTIPOINT = "pointtoMultipoint"
+
+
+@enum.unique
+class CustomerBillOnDemandStateType(enum.Enum):
+    IN_PROGRESS = "inProgress"
+    REJECTED = "rejected"
+    DONE = "done"
+    TERMINATED_WITH_ERROR = "terminatedWithError"
+
+
+@enum.unique
+class CustomerBillRunType(enum.Enum):
+    ON_CYCLE = "onCycle"
+    OFF_CYCLE = "offCycle"
+
+
+@enum.unique
+class CustomerBillStateType(enum.Enum):
+    NEW = "new"
+    ON_HOLD = "onHold"
+    VALIDATED = "validated"
+    SENT = "sent"
+    SETTLED = "settled"
+    PARTIALLY_PAID = "partiallyPaid"
 
 
 @enum.unique
@@ -1609,6 +1633,17 @@ class AssociationSpecificationRef(EntityRef):
 class AttachmentRef(EntityRef):
     _referred_type: str = "Attachment"
     url: Optional[str] = None
+    description: Optional[str] = None
+
+
+@dataclass(repr=False)
+class BillCycleRef(EntityRef):
+    _referred_type: str = "BillCycle"
+
+
+@dataclass(repr=False)
+class BillCycleSpecificationRef(EntityRef):
+    _referred_type: str = "BillCycleSpecification"
     description: Optional[str] = None
 
 
@@ -4286,6 +4321,7 @@ class AppliedBillingTaxRate(Entity):
     taxCategory: TaxCategory
     taxRate: float
     id: Optional[str] = None
+    href: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -4304,10 +4340,101 @@ class AppliedCustomerBillingRate(Entity, BaseCRUDMixin):
     bill: Optional[CustomerBillRef] = None
     appliedTax: Optional[List[AppliedBillingTaxRate]] = field(default_factory=list)
     isBilled: bool = False
+    characteristic: Optional[List[Characteristic]] = field(default_factory=list)
 
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/customerBill/v5/appliedCustomerBillingRate"
+
+
+@dataclass(repr=False)
+class AppliedPayment(Entity):
+    appliedAmount: Optional[Money] = None
+    payment: Optional[PaymentRef] = None
+
+
+@dataclass(repr=False)
+class BillCycle(Entity, BaseCRUDMixin):
+    """A billing cycle defining the dates driving the bill production (TMF678)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    billingDate: Optional[str] = None
+    billingPeriod: Optional[str] = None
+    chargeDate: Optional[str] = None
+    creditDate: Optional[str] = None
+    mailingDate: Optional[str] = None
+    paymentDueDate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    BillCycleSpecification: Optional[BillCycleSpecificationRef] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/customerBill/v5/billCycle"
+
+
+@dataclass(repr=False)
+class CustomerBill(Entity, BaseCRUDMixin):
+    """A customer bill (invoice) produced at the end of the billing process (TMF678).
+
+    Attributes:
+        billNo (Optional[str]): Bill reference known by the customer.
+        state (Optional[CustomerBillStateType]): Lifecycle state of the bill.
+        runType (Optional[CustomerBillRunType]): Whether the bill was produced on or off cycle.
+        appliedPayment (Optional[List[AppliedPayment]]): Payments applied against the bill.
+        taxItem (Optional[List[TaxItem]]): Taxes applied at bill level.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    billNo: Optional[str] = None
+    category: Optional[str] = None
+    billDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    nextBillDate: Optional[str] = None
+    paymentDueDate: Optional[str] = None
+    runType: Optional[CustomerBillRunType] = None
+    state: Optional[CustomerBillStateType] = None
+    amountDue: Optional[Money] = None
+    remainingAmount: Optional[Money] = None
+    taxExcludedAmount: Optional[Money] = None
+    taxIncludedAmount: Optional[Money] = None
+    billingPeriod: Optional[TimePeriod] = None
+    billingAccount: Optional[BillingAccountRef] = None
+    financialAccount: Optional[FinancialAccountRef] = None
+    paymentMethod: Optional[PaymentMethodRef] = None
+    billCycle: Optional[BillCycleRef] = None
+    appliedPayment: Optional[List[AppliedPayment]] = field(default_factory=list)
+    billDocument: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    taxItem: Optional[List[TaxItem]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/customerBill/v5/customerBill"
+
+
+@dataclass(repr=False)
+class CustomerBillOnDemand(Entity, BaseCRUDMixin):
+    """A request for a real-time (on demand) customer bill creation (TMF678)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    state: Optional[CustomerBillOnDemandStateType] = None
+    billingAccount: Optional[BillingAccountRef] = None
+    customerBill: Optional[CustomerBillRef] = None
+    relatedParty: Optional[RelatedPartyRefOrPartyRoleRef] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/customerBill/v5/customerBillOnDemand"
 
 
 @dataclass(repr=False)

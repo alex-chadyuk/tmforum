@@ -72,7 +72,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF632 Party Management | `partyManagement/v5` | `Individual`, `Organization` |
 | TMF669 Party Role | `partyRoleManagement/v5` | `PartyRole`, `Supplier`, `BusinessPartner`, `Consumer`, `Producer` |
 | TMF666 Account Management | `accountManagement/v5` | `BillingAccount`, `SettlementAccount`, `PartyAccount`, `FinancialAccount`, `BillingCycleSpecification`, `BillFormat`, `BillPresentationMedia` |
-| TMF678 Customer Bill | `customerBill/v5` | `AppliedCustomerBillingRate` |
+| TMF678 Customer Bill | `customerBill/v5` | `CustomerBill`, `CustomerBillOnDemand`, `BillCycle`, `AppliedCustomerBillingRate` |
 | TMF648 Quote | `quoteManagement/v5` | `Quote` |
 | TMF679 Product Offering Qualification | `productOfferingQualification/v5` | `CheckProductOfferingQualification`, `QueryProductOfferingQualification` |
 | TMF699 Sales Management | `salesManagement/v5` | `SalesLead`, `SalesOpportunity` |

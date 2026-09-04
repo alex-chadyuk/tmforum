@@ -4,6 +4,30 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.17.0 — 2026-09-04
+
+Source spec: TMF678 Customer Bill Management v5.0.0.
+
+Adds the three Customer Bill resources that were missing; previously only
+`AppliedCustomerBillingRate` was implemented, so bills themselves could not be
+retrieved through the SDK.
+
+### Added
+
+- `CustomerBill` (CRUD, `customerBill/v5/customerBill`) — the bill/invoice resource.
+- `CustomerBillOnDemand` (CRUD, `customerBill/v5/customerBillOnDemand`) — real-time bill creation request.
+- `BillCycle` (CRUD, `customerBill/v5/billCycle`) — billing cycle dates.
+- `AppliedPayment` — payment applied against a customer bill.
+- `BillCycleRef`, `BillCycleSpecificationRef` — new refs. `BillCycleSpecificationRef` is
+  distinct from the existing TMF666 `BillingCycleSpecificationRef`; both are needed
+  because class names must match the wire `@type`.
+- Enums `CustomerBillStateType`, `CustomerBillOnDemandStateType`, `CustomerBillRunType`.
+
+### Changed
+
+- `AppliedCustomerBillingRate` gains `characteristic: Optional[List[Characteristic]]`.
+- `AppliedBillingTaxRate` gains `href`.
+
 ## 0.16.0 — 2026-09-02
 
 Source spec: TMF666 Account Management v5.0.0.

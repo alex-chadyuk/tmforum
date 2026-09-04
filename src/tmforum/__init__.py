@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.18.0"
+__version__ = "0.19.0"
 
 
 @dataclass
@@ -1252,6 +1252,14 @@ class ProductStatusType(enum.Enum):
 
 
 @enum.unique
+class ProductUsageSpecificationLifecycleStatusType(enum.Enum):
+    IN_DESIGN = "inDesign"
+    IN_TEST = "inTest"
+    ACTIVE = "active"
+    OBSOLETE = "obsolete"
+
+
+@enum.unique
 class ProviderType(enum.Enum):
     EXTERNAL = "External"
     INTERNAL = "Internal"
@@ -2056,6 +2064,11 @@ class ServiceSpecificationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class ServiceUsageSpecificationRef(EntityRef):
+    _referred_type: Optional[str] = "ServiceUsageSpecification"
+
+
+@dataclass(repr=False)
 class SLARef(EntityRef):
     _referred_type: Optional[str] = "SLA"
 
@@ -2297,6 +2310,13 @@ class Intent(Entity):
 @dataclass(repr=False)
 class TargetProductSchema(Entity):
     id: Optional[str] = None
+    _schema_location: Optional[str] = None
+
+
+@dataclass(repr=False)
+class TargetProductUsageSchema(Entity):
+    """The schema and type of the target product usage described by a product usage specification."""
+
     _schema_location: Optional[str] = None
 
 
@@ -4550,6 +4570,42 @@ class ProductCatalog(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/productCatalogManagement/v5/productCatalog"
+
+
+@dataclass(repr=False)
+class ProductUsageSpecification(Entity, BaseCRUDMixin):
+    """A detailed description of a product usage that is of interest to the business.
+
+    Comprised of characteristic specifications defining all attributes and their
+    possible values known for a particular type of product usage (TMF767).
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    lifecycleStatus: Optional[ProductUsageSpecificationLifecycleStatusType] = None
+    version: Optional[str] = None
+    productSpecification: Optional[List[ProductSpecificationRef]] = field(
+        default_factory=list
+    )
+    serviceUsageSpecification: Optional[List[ServiceUsageSpecificationRef]] = field(
+        default_factory=list
+    )
+    specCharacteristic: Optional[List[CharacteristicSpecification]] = field(
+        default_factory=list
+    )
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    validFor: Optional[TimePeriod] = None
+    targetProductUsageSchema: Optional[TargetProductUsageSchema] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}/productUsageCatalogManagement/v5"
+            "/productUsageSpecification"
+        )
 
 
 @dataclass(repr=False)

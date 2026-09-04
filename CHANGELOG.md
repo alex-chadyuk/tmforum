@@ -4,6 +4,25 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.19.0 — 2026-09-04
+
+Source spec: TMF767 Product Usage Catalog Management v5.0.0.
+
+First coverage of the Product Usage Catalog API — its single REST resource was
+entirely absent from the SDK.
+
+### Added
+
+- `ProductUsageSpecification` (CRUD, `productUsageCatalogManagement/v5/productUsageSpecification`) —
+  description of a metered product usage, carrying the characteristic specifications
+  instantiated on the product usages it describes.
+- `ServiceUsageSpecificationRef` — reference to the service usage specification(s)
+  involved in producing a product usage specification.
+- `TargetProductUsageSchema` — schema/type reference for the target product usage,
+  mirroring the existing `TargetProductSchema`.
+- `ProductUsageSpecificationLifecycleStatusType` enum
+  (`inDesign`, `inTest`, `active`, `obsolete`).
+
 ## 0.18.0 — 2026-09-04
 
 Source spec: TMF622 Product Ordering v5.0.0.

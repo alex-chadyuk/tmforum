@@ -89,6 +89,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF760 Product Configuration | `productConfiguration/v5` | `CheckProductConfiguration`, `QueryProductConfiguration`, `ProductConfiguration` |
 | TMF673 Geographic Address | `geographicAddressManagement/v4` | `GeographicAddress`, `GeographicAddressValidation`, `GeographicSubAddress`, `GeographicLocation` |
 | TMF674 Geographic Site | `geographicSiteManagement/v5` | `GeographicSite`, `GeographicSiteFeature`, `GeographicSiteRelationship` |
+| TMF767 Product Usage Catalog | `productUsageCatalogManagement/v5` | `ProductUsageSpecification` |
 
 ## How it works
 

@@ -13,6 +13,7 @@ from tmforum import (
     BundledProductOffering,
     BundledProductSpecification,
     BundledProductOfferingOption,
+    CancelProductOrder,
     Category,
     ChannelRef,
     ChargeType,
@@ -1547,3 +1548,64 @@ def test_check_product_configuration_resource_path():
     assert CheckProductConfiguration.get_resource_path(context) == (
         "https://mycsp.com/tmf-api/productConfiguration/v5/checkProductConfiguration"
     )
+
+
+@pytest.fixture
+def cancel_product_order_dict():
+    return {
+        "@type": "CancelProductOrder",
+        "id": "cpo-4410",
+        "href": "https://mycsp.com/tmf-api/productOrdering/v5/cancelProductOrder/cpo-4410",
+        "cancellationReason": "Customer changed their mind before activation",
+        "creationDate": "2026-04-02T09:00:00.000Z",
+        "requestedCancellationDate": "2026-04-03T00:00:00.000Z",
+        "effectiveCancellationDate": "2026-04-03T10:15:00.000Z",
+        "state": "done",
+        "productOrder": {
+            "@type": "ProductOrderRef",
+            "id": "po-7781",
+            "href": "https://mycsp.com/tmf-api/productOrdering/v5/productOrder/po-7781",
+            "name": "Broadband upgrade order",
+            "@referredType": "ProductOrder",
+        },
+    }
+
+
+def test_cancel_product_order_from_dict_nested_types(cancel_product_order_dict):
+    cancel = CancelProductOrder.from_dict(cancel_product_order_dict)
+
+    assert isinstance(cancel, CancelProductOrder)
+    assert cancel.id == "cpo-4410"
+    assert cancel.cancellationReason == "Customer changed their mind before activation"
+    assert cancel.creationDate == "2026-04-02T09:00:00.000Z"
+    assert cancel.requestedCancellationDate == "2026-04-03T00:00:00.000Z"
+    assert cancel.effectiveCancellationDate == "2026-04-03T10:15:00.000Z"
+    assert cancel.state is TaskStateType.DONE
+
+    assert isinstance(cancel.productOrder, ProductOrderRef)
+    assert cancel.productOrder.id == "po-7781"
+    assert cancel.productOrder._referred_type == "ProductOrder"
+
+
+def test_cancel_product_order_unknown_state_passes_through(cancel_product_order_dict):
+    cancel_product_order_dict = dict(cancel_product_order_dict, state="onHold")
+    cancel = CancelProductOrder.from_dict(cancel_product_order_dict)
+
+    assert cancel.state == "onHold"
+    assert cancel.to_dict()["state"] == "onHold"
+
+
+def test_cancel_product_order_resource_path():
+    context = Context(api_base_url="https://mycsp.com:8080/tmf-api")
+    assert CancelProductOrder.get_resource_path(context) == (
+        "https://mycsp.com:8080/tmf-api/productOrdering/v5/cancelProductOrder"
+    )
+
+
+def test_cancel_product_order_to_dict_round_trip(cancel_product_order_dict):
+    result = CancelProductOrder.from_dict(cancel_product_order_dict).to_dict()
+
+    assert result["@type"] == "CancelProductOrder"
+    assert "@baseType" not in result
+    assert result["state"] == "done"
+    assert result["productOrder"]["@referredType"] == "ProductOrder"

@@ -4,6 +4,19 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.18.0 — 2026-09-04
+
+Source spec: TMF622 Product Ordering v5.0.0.
+
+Completes the Product Ordering resource surface: the spec exposes two resources
+and only `productOrder` was reachable through `BaseCRUDMixin`.
+
+### Added
+
+- `CancelProductOrder` (CRUD, `productOrdering/v5/cancelProductOrder`) — task resource
+  requesting cancellation of an existing product order. Mirrors the existing
+  `CancelServiceOrder` (TMF641) and `CancelResourceOrder` (TMF652).
+
 ## 0.17.0 — 2026-09-04
 
 Source spec: TMF678 Customer Bill Management v5.0.0.

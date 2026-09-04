@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.17.0"
+__version__ = "0.18.0"
 
 
 @dataclass
@@ -5023,6 +5023,24 @@ class ProductOrder(Entity, BaseCRUDMixin):
             f"Product with id {product.id} not found in order {self.id}"
         )
         return self
+
+
+@dataclass(repr=False)
+class CancelProductOrder(Entity, BaseCRUDMixin):
+    """A task requesting cancellation of an existing product order (TMF622)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    cancellationReason: Optional[str] = None
+    creationDate: Optional[str] = None
+    effectiveCancellationDate: Optional[str] = None
+    requestedCancellationDate: Optional[str] = None
+    state: Optional[TaskStateType] = None
+    productOrder: Optional[ProductOrderRef] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/productOrdering/v5/cancelProductOrder"
 
 
 @dataclass(repr=False)

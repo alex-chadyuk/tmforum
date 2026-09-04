@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tmforum"
-version = "0.17.0"
+version = "0.18.0"
 description = "Unofficial Python SDK for TM Forum Open APIs: dataclass entity models with @type-aware serialization and REST CRUD helpers"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -41,7 +41,7 @@ Homepage = "https://github.com/alex-chadyuk/tmforum"
 Issues = "https://github.com/alex-chadyuk/tmforum/issues"
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "build", "twine", "black"]
+dev = ["pytest>=7", "build", "twine", "black", "pyyaml"]
 
 [tool.black]
 # Pinned to the package's minimum supported Python. Without it Black infers its

@@ -4,6 +4,39 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.20.0 — 2026-09-04
+
+Source spec: TMF770 Fraud Management v5.0.0.
+
+First coverage of the Fraud Management API — its single REST resource and the whole
+fraud criteria/result model were absent from the SDK.
+
+### Added
+
+- `EvaluateFraudRisk` (CRUD, `fraudManagement/v5/evaluateFraudRisk`) — task resource
+  coordinating a fraud evaluation, carrying the target contact mediums under
+  assessment, the parties involved, the requested checks and their results. Extends
+  the existing `TaskResource`.
+- `FraudEvaluationCriteria` / `FraudEvaluationResult` — aggregates of the four
+  criteria and four result blocks below.
+- `FraudRiskProfileCriteria` / `FraudRiskProfileResult` — SIM, device and line tenure,
+  payment method, call forwarding, service status and SIM swap factors; the result
+  side expresses tenures as `Duration` and service status as `ServiceStateType`.
+- `FraudNetworkAuthenticationCriteria` / `FraudNetworkAuthenticationResult` —
+  network-level call verification.
+- `FraudScoreCriteria` / `FraudScoreResult` — fraud score with optional explanation.
+- `FraudProfileMatchCriteria` / `FraudProfileMatchResult` — profile matching against
+  known fraud patterns, with per-element scores in `ProfileMatch`.
+- `ProfileMatch` — match element and score for one profile attribute.
+- `WebFormContactMedium` — the remaining `ContactMedium` subtype, completing the set
+  alongside `EmailContactMedium`, `PhoneContactMedium`, `FaxContactMedium`,
+  `SocialContactMedium` and `GeographicAddressContactMedium`.
+
+### Changed
+
+- `ServiceStateType` gained the `created`, `pendingActive` and `pendingTerminate`
+  members present in the spec but missing from the enum.
+
 ## 0.19.0 — 2026-09-04
 
 Source spec: TMF767 Product Usage Catalog Management v5.0.0.

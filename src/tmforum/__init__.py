@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.19.0"
+__version__ = "0.20.0"
 
 
 @dataclass
@@ -1530,6 +1530,7 @@ class ServiceOrderStateType(enum.Enum):
 
 @enum.unique
 class ServiceStateType(enum.Enum):
+    CREATED = "created"
     INACTIVE = "inactive"
     RESERVED = "reserved"
     ACTIVE = "active"
@@ -1537,6 +1538,8 @@ class ServiceStateType(enum.Enum):
     TERMINATED = "terminated"
     SUSPENDED = "suspended"
     DESIGNED = "designed"
+    PENDING_ACTIVE = "pendingActive"
+    PENDING_TERMINATE = "pendingTerminate"
 
 
 @enum.unique
@@ -4237,6 +4240,11 @@ class GeographicAddressContactMedium(ContactMedium):
 
 
 @dataclass(repr=False)
+class WebFormContactMedium(ContactMedium):
+    url: Optional[str] = None
+
+
+@dataclass(repr=False)
 class Contact(Entity):
     contactName: Optional[str] = None
     contactType: Optional[ContactType] = None
@@ -6859,3 +6867,107 @@ class QueryProductOfferingQualificationItem(Entity):
     qualificationItemRelationship: Optional[
         List[ProductOfferingQualificationItemRelationship]
     ] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class ProfileMatch(Entity):
+    matchElement: Optional[str] = None
+    matchScore: Optional[str] = None
+
+
+@dataclass(repr=False)
+class FraudRiskProfileCriteria(Entity):
+    simTenure: Optional[bool] = None
+    deviceTenure: Optional[bool] = None
+    lineTenure: Optional[bool] = None
+    paymentMethod: Optional[bool] = None
+    callForwarding: Optional[bool] = None
+    serviceStatus: Optional[bool] = None
+    simSwap: Optional[bool] = None
+
+
+@dataclass(repr=False)
+class FraudRiskProfileResult(Entity):
+    simTenure: Optional[Duration] = None
+    deviceTenure: Optional[Duration] = None
+    lineTenure: Optional[Duration] = None
+    paymentMethod: Optional[PaymentMethodRef] = None
+    callForwardingStatus: Optional[bool] = None
+    serviceStatus: Optional[ServiceStateType] = None
+    role: Optional[str] = None
+    simSwapStatus: Optional[bool] = None
+
+
+@dataclass(repr=False)
+class FraudNetworkAuthenticationCriteria(Entity):
+    callVerification: Optional[bool] = None
+
+
+@dataclass(repr=False)
+class FraudNetworkAuthenticationResult(Entity):
+    callVerification: Optional[str] = None
+
+
+@dataclass(repr=False)
+class FraudScoreCriteria(Entity):
+    isExplanationRequired: Optional[bool] = None
+
+
+@dataclass(repr=False)
+class FraudScoreResult(Entity):
+    score: Optional[str] = None
+    explanation: Optional[str] = None
+
+
+@dataclass(repr=False)
+class FraudProfileMatchCriteria(Entity):
+    email: Optional[EmailContactMedium] = None
+    partyName: Optional[str] = None
+    address: Optional[GeographicAddressContactMedium] = None
+
+
+@dataclass(repr=False)
+class FraudProfileMatchResult(Entity):
+    globalMatchScore: Optional[str] = None
+    profileMatch: Optional[List[ProfileMatch]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class FraudEvaluationCriteria(Entity):
+    fraudRiskProfileCriteria: Optional[FraudRiskProfileCriteria] = None
+    fraudNetworkAuthenticationCriteria: Optional[FraudNetworkAuthenticationCriteria] = (
+        None
+    )
+    fraudScoreCriteria: Optional[FraudScoreCriteria] = None
+    fraudProfileMatchCriteria: Optional[FraudProfileMatchCriteria] = None
+
+
+@dataclass(repr=False)
+class FraudEvaluationResult(Entity):
+    fraudRiskProfileResult: Optional[FraudRiskProfileResult] = None
+    fraudNetworkAuthenticationResult: Optional[FraudNetworkAuthenticationResult] = None
+    fraudScoreResult: Optional[FraudScoreResult] = None
+    fraudProfileMatchResult: Optional[FraudProfileMatchResult] = None
+
+
+@dataclass(repr=False)
+class EvaluateFraudRisk(TaskResource, BaseCRUDMixin):
+    """A task resource coordinating a fraud evaluation for a customer or transaction.
+
+    Defines the fraud detection checks to perform (risk profiling, network
+    authentication, fraud scoring and profile matching) and captures their results.
+    The task identifies the target being assessed — typically a phone number or
+    other contact medium — and the parties involved in the assessment (TMF770).
+    """
+
+    requestedFraudEvaluationDate: Optional[str] = None
+    fraudTargetIdentifier: Optional[List[ContactMedium]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    fraudEvaluationCriteria: Optional[FraudEvaluationCriteria] = None
+    fraudEvaluationResult: Optional[FraudEvaluationResult] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/fraudManagement/v5/evaluateFraudRisk"

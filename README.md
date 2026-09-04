@@ -90,6 +90,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF673 Geographic Address | `geographicAddressManagement/v4` | `GeographicAddress`, `GeographicAddressValidation`, `GeographicSubAddress`, `GeographicLocation` |
 | TMF674 Geographic Site | `geographicSiteManagement/v5` | `GeographicSite`, `GeographicSiteFeature`, `GeographicSiteRelationship` |
 | TMF767 Product Usage Catalog | `productUsageCatalogManagement/v5` | `ProductUsageSpecification` |
+| TMF770 Fraud Management | `fraudManagement/v5` | `EvaluateFraudRisk` |
 
 ## How it works
 

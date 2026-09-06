@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.22.0"
+__version__ = "0.23.0"
 
 
 @dataclass
@@ -2017,6 +2017,16 @@ class ResourceRef(EntityRef):
 class ResourceSpecificationRef(EntityRef):
     _referred_type: Optional[str] = "ResourceSpecification"
     version: Optional[str] = None
+
+
+@dataclass(repr=False)
+class ResourceUsageRef(EntityRef):
+    _referred_type: Optional[str] = "ResourceUsage"
+
+
+@dataclass(repr=False)
+class ResourceUsageSpecificationRef(EntityRef):
+    _referred_type: Optional[str] = "ResourceUsageSpecification"
 
 
 @dataclass(repr=False)
@@ -6231,6 +6241,85 @@ class ExportJob(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/resourceCatalog/v5/exportJob"
+
+
+@dataclass(repr=False)
+class ResourceUsageSpecRelationship(Entity):
+    """A dependency, substitution or exclusivity relationship between resource usage specifications."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    relationshipType: Optional[str] = None
+    role: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class ResourceUsage(Entity, BaseCRUDMixin):
+    """An occurrence of usage on a Resource, derived from various Service usages.
+
+    Comprised of characteristics representing attributes of the resource usage
+    (TMF771).
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    usageDate: Optional[str] = None
+    description: Optional[str] = None
+    usageType: Optional[str] = None
+    isBundle: Optional[bool] = None
+    usageCharacteristic: Optional[List[Characteristic]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    resource: Optional[ResourceRef] = None
+    usageSpecification: Optional[ResourceUsageSpecificationRef] = None
+    bundledResourceUsage: Optional[List[ResourceUsageRef]] = field(default_factory=list)
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/resourceUsageManagement/v5/resourceUsage"
+
+
+@dataclass(repr=False)
+class ResourceUsageSpecification(Entity, BaseCRUDMixin):
+    """A detailed description of a Resource usage event of interest to the business.
+
+    Comprised of characteristic specifications defining all attributes known for a
+    particular type of resource usage (TMF771).
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    isBundle: Optional[bool] = None
+    lastUpdate: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    version: Optional[str] = None
+    resourceSpecification: Optional[List[ResourceSpecificationRef]] = field(
+        default_factory=list
+    )
+    specCharacteristic: Optional[List[CharacteristicSpecification]] = field(
+        default_factory=list
+    )
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    bundledResourceUsageSpecification: Optional[List[ResourceUsageSpecificationRef]] = (
+        field(default_factory=list)
+    )
+    resourceUsageSpecRelationship: Optional[List[ResourceUsageSpecRelationship]] = (
+        field(default_factory=list)
+    )
+    validFor: Optional[TimePeriod] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}/resourceUsageManagement/v5"
+            "/resourceUsageSpecification"
+        )
 
 
 @dataclass(repr=False)

@@ -4,6 +4,43 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.23.0 — 2026-09-06
+
+Source spec: TMF771 Resource Usage Management v5.0.0.
+
+First coverage of the Resource Usage Management API. Both REST resources in TMF771 —
+`ResourceUsage` and `ResourceUsageSpecification` — are new, along with their two refs
+and the usage-spec relationship. The characteristic, attachment, party and resource
+refs they build on were already present from TMF620, TMF632/669 and TMF634/639, so no
+existing class needed changes.
+
+### Added
+
+- `ResourceUsage` (CRUD, `resourceUsageManagement/v5/resourceUsage`) — an occurrence of
+  usage on a resource, derived from various service usages and described by
+  characteristics. Fields: `id`, `href`, `usageDate`, `description`, `usageType`,
+  `isBundle`, `usageCharacteristic`, `relatedParty`, `resource`, `usageSpecification`,
+  `bundledResourceUsage`, `externalIdentifier`.
+- `ResourceUsageSpecification` (CRUD,
+  `resourceUsageManagement/v5/resourceUsageSpecification`) — a detailed description of
+  a resource usage event that is of interest to the business and can have charges
+  applied to it. Fields: `id`, `href`, `name`, `description`, `isBundle`, `lastUpdate`,
+  `lifecycleStatus`, `version`, `resourceSpecification`, `specCharacteristic`,
+  `attachment`, `bundledResourceUsageSpecification`, `resourceUsageSpecRelationship`,
+  `validFor`.
+- `ResourceUsageSpecRelationship` — a dependency, substitution or exclusivity
+  relationship between resource usage specifications (`id`, `href`, `name`,
+  `relationshipType`, `role`, `validFor`).
+- `ResourceUsageRef` and `ResourceUsageSpecificationRef` refs.
+
+### Notes
+
+- `ResourceUsageSpecification.lifecycleStatus` is typed `str`: TMF771 declares it as a
+  plain string with no enumeration, unlike the TMF767 product usage equivalent.
+- `ResourceUsageSpecRelationship` extends `Entity` with inline `id`/`href`/`name`
+  rather than `EntityRef`, matching the existing `ResourceSpecificationRelationship`
+  and `ServiceSpecRelationship` classes.
+
 ## 0.22.0 — 2026-09-04
 
 Source spec: TMF663 Shopping Cart v5.0.0.

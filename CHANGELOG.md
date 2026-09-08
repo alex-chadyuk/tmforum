@@ -4,6 +4,44 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.24.0 — 2026-09-08
+
+Source spec: TMF683 Party Interaction v5.0.0.
+
+First coverage of the Party Interaction Management API. `PartyInteraction` is the single
+REST resource in TMF683, and it is new along with its interaction-item model. The
+channel, party, attachment, note and external-identifier structures it builds on were
+already present from TMF620, TMF632/669 and TMF652, so no existing class needed changes.
+
+### Added
+
+- `PartyInteraction` (CRUD, `partyInteraction/v5/partyInteraction`) — a past interaction
+  between a party and the service provider, capturing where it took place, who started
+  it, why, and what it was about. Fields: `id`, `href`, `description`, `direction`,
+  `reason`, `status`, `statusChangeDate`, `creationDate`, `lastUpdate`,
+  `interactionDate`, `relatedChannel`, `relatedParty`, `attachment`, `note`,
+  `interactionItem`, `interactionRelationship`, `externalIdentifier`.
+- `InteractionItem` — an item of a party interaction, referring to the entity it is
+  about and classified by `interactionItemType` (e.g. Case, Ticket, Incident). Fields:
+  `id`, `itemDate`, `reason`, `resolution`, `creationDate`, `lastUpdate`,
+  `interactionItemType`, `item`, `relatedChannel`, `relatedParty`, `attachment`, `note`,
+  `interactionItemRelationship`.
+- `InteractionItemRelationship` — a relationship between two interaction items of the
+  same interaction (`id`, `relationshipType`).
+- `InteractionRelationship` ref — a relationship from one party interaction to another
+  (`_referred_type = "PartyInteraction"`, `relationshipType`).
+
+### Notes
+
+- `PartyInteraction.status` is typed `str`: TMF683 declares it as a plain string. The
+  spec's `PartyInteractionStatusExampleType` enum is illustrative only and referenced by
+  no schema, so it is not implemented.
+- Field set is the union of the `PartyInteraction`, `_FVO` and `_MVO` variants: `_FVO`
+  omits `statusChangeDate` and `creationDate`, and `_MVO` also omits `direction`.
+- The resource path follows the spec's own response examples
+  (`https://host:port/partyInteraction/v5/partyInteraction/...`), since the `servers`
+  entry is the placeholder `https://serverRoot`.
+
 ## 0.23.0 — 2026-09-06
 
 Source spec: TMF771 Resource Usage Management v5.0.0.

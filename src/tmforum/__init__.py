@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.23.0"
+__version__ = "0.24.0"
 
 
 @dataclass
@@ -1758,6 +1758,14 @@ class IntentRef(EntityRef):
 @dataclass(repr=False)
 class IntentSpecificationRef(EntityRef):
     _referred_type: str = "IntentSpecification"
+
+
+@dataclass(repr=False)
+class InteractionRelationship(EntityRef):
+    """A relationship from one party interaction to another (TMF683)."""
+
+    _referred_type: str = "PartyInteraction"
+    relationshipType: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -7158,3 +7166,72 @@ class ShoppingCart(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/shoppingCart/v5/shoppingCart"
+
+
+@dataclass(repr=False)
+class InteractionItemRelationship(Entity):
+    """A relationship between two interaction items of the same interaction."""
+
+    id: Optional[str] = None
+    relationshipType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class InteractionItem(Entity):
+    """An item of a party interaction, referring to the entity it is about.
+
+    Classified by ``interactionItemType`` (e.g. Case, Ticket, Incident) and
+    optionally linked to sibling items of the same interaction (TMF683).
+    """
+
+    id: Optional[str] = None
+    itemDate: Optional[TimePeriod] = None
+    reason: Optional[str] = None
+    resolution: Optional[str] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    interactionItemType: Optional[str] = None
+    item: Optional[RelatedEntityRefOrValue] = None
+    relatedChannel: Optional[List[RelatedChannel]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    interactionItemRelationship: Optional[List[InteractionItemRelationship]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(repr=False)
+class PartyInteraction(Entity, BaseCRUDMixin):
+    """A past interaction between a party and the service provider (TMF683).
+
+    Captures where the interaction took place, who started it, why, and what it
+    was about, so that agents and customers can re-use that history in future
+    interactions.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    description: Optional[str] = None
+    direction: Optional[str] = None
+    reason: Optional[str] = None
+    status: Optional[str] = None
+    statusChangeDate: Optional[str] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    interactionDate: Optional[TimePeriod] = None
+    relatedChannel: Optional[List[RelatedChannel]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyOrPartyRole]] = field(default_factory=list)
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    interactionItem: Optional[List[InteractionItem]] = field(default_factory=list)
+    interactionRelationship: Optional[List[InteractionRelationship]] = field(
+        default_factory=list
+    )
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/partyInteraction/v5/partyInteraction"

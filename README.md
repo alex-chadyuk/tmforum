@@ -94,6 +94,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF770 Fraud Management | `fraudManagement/v5` | `EvaluateFraudRisk` |
 | TMF663 Shopping Cart | `shoppingCart/v5` | `ShoppingCart`, `CartItem`, `CartPrice`, `CartTerm` |
 | TMF771 Resource Usage Management | `resourceUsageManagement/v5` | `ResourceUsage`, `ResourceUsageSpecification` |
+| TMF683 Party Interaction | `partyInteraction/v5` | `PartyInteraction`, `InteractionItem` |
 
 ## How it works
 

@@ -4,6 +4,76 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.25.0 — 2026-09-09
+
+Source spec: TMF656 Service Problem Management v5.0.0.
+
+First coverage of the Service Problem Management API. All six REST resources of TMF656
+were missing: the `ServiceProblem` inventory, the read-only `ServiceProblemEventRecord`,
+and the four task resources that acknowledge, unacknowledge, group and ungroup problems.
+The service, resource, place, party, characteristic, note and error structures they build
+on were already present from TMF638, TMF639, TMF673/674 and TMF632/669.
+
+### Added
+
+- `ServiceProblem` (CRUD, `serviceProblemManagement/v5/serviceProblem`) — a problem
+  abstracted at the service layer from underlying resource and network events. Fields:
+  `id`, `href`, `name`, `description`, `category`, `reason`, `priority`, `status`,
+  `statusChangeDate`, `statusChangeReason`, `creationDate`, `lastUpdate`,
+  `resolutionDate`, `originatingSystem`, `problemEscalation`, `impactImportanceFactor`,
+  `affectedNumberOfServices`, `impactPattern`, `firstAlert`, `responsibleParty`,
+  `originatorParty`, `affectedLocation`, `affectedResource`, `affectedService`,
+  `rootCauseResource`, `rootCauseService`, `parentProblem`, `underlyingProblem`,
+  `underlyingAlarm`, `slaViolation`, `troubleTicket`, `relatedEvent`, `relatedEntity`,
+  `relatedParty`, `trackingRecord`, `characteristic`, `externalIdentifier`,
+  `errorMessage`, `note`.
+- `ServiceProblemEventRecord` (CRUD, `.../serviceProblemEventRecord`) — a read-only
+  record of an event related to a service problem, received from another system
+  (`id`, `href`, `eventTime`, `eventType`, `recordTime`, `serviceProblem`,
+  `notification`).
+- `ProblemAcknowledgement` (CRUD, `.../problemAcknowledgement`) — task requesting that
+  the problem handler acknowledge a set of problems (`id`, `href`, `state`,
+  `trackingRecord`, `problem`, `ackProblem`).
+- `ProblemUnacknowledgement` (CRUD, `.../problemUnacknowledgement`) — task rolling
+  problems back from acknowledged to submitted (`id`, `href`, `state`, `trackingRecord`,
+  `problem`, `unackProblem`).
+- `ProblemGroup` (CRUD, `.../problemGroup`) — task grouping problems under a parent
+  (`id`, `href`, `state`, `parentProblem`, `childProblem`).
+- `ProblemUngroup` (CRUD, `.../problemUngroup`) — task detaching problems from a parent
+  (`id`, `href`, `state`, `parentProblem`, `childProblem`).
+- `ImpactPattern` — impact of a problem expressed as characteristics rather than through
+  the pre-defined attributes (`id`, `href`, `description`, `characteristic`).
+- `RelatedEntity` — a reference to an entity of unknown type, qualified by `role`.
+- `TrackingRecord` — one modification made to a problem (`id`, `description`, `systemId`,
+  `time`, `user`, `characteristic`).
+- `StandardIdentifier` — identification of an entity in a standard or regulatory
+  definition, e.g. `ISO 3166-1 Alpha 2` / `GB` (`id`, `href`, `format`, `value`).
+- `ServiceProblemStateType` enum — `acknowledged`, `rejected`, `pending`, `held`,
+  `inProgress`, `resolved`, `cancelled`, `closed`.
+- Refs: `ServiceProblemRef`, `EventRef` (with `eventTime`), `ResourceAlarmRef` (with
+  `changeRequest`), `SLAViolationRef`, `TroubleTicketRef`.
+- `GeographicAddress` gains `geographicAddressType`, `countryCode`
+  (`List[StandardIdentifier]`) and `externalIdentifier`, present in the v5 address shape
+  TMF656 embeds but absent from the TMF673 v4 spec the class was built from.
+
+### Notes
+
+- The four task resources type `state` as `TaskStateType`. TMF656 declares it a plain
+  string, but documents exactly the values (`acknowledged`, `inProgress`,
+  `terminatedWithError`, `done`) that the existing enum already carries, and seven other
+  task resources in the SDK use it.
+- `ServiceProblemEventRecord.notification` is typed `Any`: the spec types it as the
+  open `Any` schema, so the payload passes through unconverted.
+- Field sets are the union of each schema's base, `_FVO` and `_MVO` variants; for TMF656
+  the variants add no fields beyond the base.
+- TMF656's embedded copy of `GeographicSite` calls the site-relationship array
+  `siteRelationship` and adds a `place` array. Neither appears in the authoritative
+  TMF674 v5 spec, whose `geographicSiteRelationship` the SDK already implements, so
+  `GeographicSite` is left unchanged.
+- The resource path follows the spec's own response examples
+  (`https://host:port/tmf-api/serviceProblemManagement/v5/serviceProblem/...`), since the
+  `servers` entry is the placeholder `https://serverRoot`.
+
 ## 0.24.0 — 2026-09-08
 
 Source spec: TMF683 Party Interaction v5.0.0.

@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.24.0"
+__version__ = "0.25.0"
 
 
 @dataclass
@@ -1543,6 +1543,18 @@ class ServiceOrderStateType(enum.Enum):
 
 
 @enum.unique
+class ServiceProblemStateType(enum.Enum):
+    ACKNOWLEDGED = "acknowledged"
+    REJECTED = "rejected"
+    PENDING = "pending"
+    HELD = "held"
+    IN_PROGRESS = "inProgress"
+    RESOLVED = "resolved"
+    CANCELLED = "cancelled"
+    CLOSED = "closed"
+
+
+@enum.unique
 class ServiceStateType(enum.Enum):
     CREATED = "created"
     INACTIVE = "inactive"
@@ -1748,6 +1760,12 @@ class EndpointSpecificationRef(EntityRef):
 class EntitySpecificationRef(EntityRef):
     _referred_type: str = "EntitySpecification"
     version: Optional[str] = None
+
+
+@dataclass(repr=False)
+class EventRef(EntityRef):
+    _referred_type: Optional[str] = "Event"
+    eventTime: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -1987,6 +2005,12 @@ class RelatedOrderItem(EntityRef):
 
 
 @dataclass(repr=False)
+class ResourceAlarmRef(EntityRef):
+    _referred_type: Optional[str] = "ResourceAlarm"
+    changeRequest: Optional[EntityRef] = None
+
+
+@dataclass(repr=False)
 class ResourceCandidateRef(EntityRef):
     _referred_type: Optional[str] = "ResourceCandidate"
     version: Optional[str] = None
@@ -2088,6 +2112,11 @@ class ServiceOrderRef(EntityRef):
 
 
 @dataclass(repr=False)
+class ServiceProblemRef(EntityRef):
+    _referred_type: Optional[str] = "ServiceProblem"
+
+
+@dataclass(repr=False)
 class ServiceRef(EntityRef):
     _referred_type: Optional[str] = "Service"
 
@@ -2106,6 +2135,16 @@ class ServiceUsageSpecificationRef(EntityRef):
 @dataclass(repr=False)
 class SLARef(EntityRef):
     _referred_type: Optional[str] = "SLA"
+
+
+@dataclass(repr=False)
+class SLAViolationRef(EntityRef):
+    _referred_type: Optional[str] = "SLAViolation"
+
+
+@dataclass(repr=False)
+class TroubleTicketRef(EntityRef):
+    _referred_type: Optional[str] = "TroubleTicket"
 
 
 ################
@@ -3733,6 +3772,17 @@ class SalesOpportunity(Entity, BaseCRUDMixin):
 
 
 @dataclass(repr=False)
+class StandardIdentifier(Entity):
+    """Identification of an entity in a standard or regulatory definition, e.g.
+    ``ISO 3166-1 Alpha 2`` / ``BE``."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    format: Optional[str] = None
+    value: Optional[str] = None
+
+
+@dataclass(repr=False)
 class Place(Entity):
     id: Optional[str] = None
     description: Optional[str] = None
@@ -3782,6 +3832,9 @@ class GeographicAddress(Place, BaseCRUDMixin):
     geographicSubAddress: Optional[List[GeographicSubAddress]] = field(
         default_factory=list
     )
+    geographicAddressType: Optional[str] = None
+    countryCode: Optional[List[StandardIdentifier]] = field(default_factory=list)
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
 
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
@@ -7235,3 +7288,201 @@ class PartyInteraction(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/partyInteraction/v5/partyInteraction"
+
+
+@dataclass(repr=False)
+class RelatedEntity(Entity):
+    """A reference to an entity whose type is not known in advance, qualified by
+    the ``role`` it plays."""
+
+    role: Optional[str] = None
+    entity: Optional[EntityRef] = None
+
+
+@dataclass(repr=False)
+class TrackingRecord(Entity):
+    """A record of a single modification made to a service problem.
+
+    Tracking records are kept alongside the problem rather than embedded in it,
+    so the problem can be retrieved without its full modification history.
+    """
+
+    id: Optional[str] = None
+    description: Optional[str] = None
+    systemId: Optional[str] = None
+    time: Optional[str] = None
+    user: Optional[str] = None
+    characteristic: Optional[List[Characteristic]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class ImpactPattern(Entity):
+    """A pattern describing the impact of a service problem, used when the impact
+    cannot be expressed through the pre-defined attributes."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    description: Optional[str] = None
+    characteristic: Optional[List[Characteristic]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class ServiceProblem(Entity, BaseCRUDMixin):
+    """A problem abstracted at the service layer from underlying resource and
+    network events, as defined by the TMF656 Service Problem Management API.
+
+    A problem records what is affected (``affectedService``, ``affectedResource``,
+    ``affectedLocation``), what caused it (``rootCauseService``,
+    ``rootCauseResource``, ``underlyingAlarm``, ``underlyingProblem``) and how
+    severely (``impactImportanceFactor``, ``impactPattern``, ``priority``).
+    Problems form a hierarchy through ``parentProblem`` - maintained by the
+    :class:`ProblemGroup` and :class:`ProblemUngroup` tasks - and their handling
+    history is carried in ``trackingRecord``.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    reason: Optional[str] = None
+    priority: Optional[int] = None
+    status: Optional[ServiceProblemStateType] = None
+    statusChangeDate: Optional[str] = None
+    statusChangeReason: Optional[str] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    resolutionDate: Optional[str] = None
+    originatingSystem: Optional[str] = None
+    problemEscalation: Optional[str] = None
+    impactImportanceFactor: Optional[str] = None
+    affectedNumberOfServices: Optional[int] = None
+    impactPattern: Optional[ImpactPattern] = None
+    firstAlert: Optional[RelatedEntity] = None
+    responsibleParty: Optional[RelatedPartyRefOrPartyRoleRef] = None
+    originatorParty: Optional[RelatedPartyRefOrPartyRoleRef] = None
+    affectedLocation: Optional[List[RelatedPlaceRefOrValue]] = field(
+        default_factory=list
+    )
+    affectedResource: Optional[List[ResourceRef]] = field(default_factory=list)
+    affectedService: Optional[List[ServiceRef]] = field(default_factory=list)
+    rootCauseResource: Optional[List[ResourceRef]] = field(default_factory=list)
+    rootCauseService: Optional[List[ServiceRef]] = field(default_factory=list)
+    parentProblem: Optional[List[ServiceProblemRef]] = field(default_factory=list)
+    underlyingProblem: Optional[List[ServiceProblemRef]] = field(default_factory=list)
+    underlyingAlarm: Optional[List[ResourceAlarmRef]] = field(default_factory=list)
+    slaViolation: Optional[List[SLAViolationRef]] = field(default_factory=list)
+    troubleTicket: Optional[List[TroubleTicketRef]] = field(default_factory=list)
+    relatedEvent: Optional[List[EventRef]] = field(default_factory=list)
+    relatedEntity: Optional[List[RelatedEntity]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    trackingRecord: Optional[List[TrackingRecord]] = field(default_factory=list)
+    characteristic: Optional[List[Characteristic]] = field(default_factory=list)
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+    errorMessage: Optional[List[ErrorMessage]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/serviceProblemManagement/v5/serviceProblem"
+
+
+@dataclass(repr=False)
+class ServiceProblemEventRecord(Entity, BaseCRUDMixin):
+    """A read-only record of an event, related to a service problem, received
+    from another system."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    eventTime: Optional[str] = None
+    eventType: Optional[str] = None
+    recordTime: Optional[str] = None
+    serviceProblem: Optional[ServiceProblemRef] = None
+    notification: Optional[Any] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}"
+            "/serviceProblemManagement/v5/serviceProblemEventRecord"
+        )
+
+
+@dataclass(repr=False)
+class ProblemAcknowledgement(Entity, BaseCRUDMixin):
+    """Task resource requesting that the problem handler acknowledge a set of
+    service problems.
+
+    ``problem`` carries the problems to acknowledge on input; ``ackProblem`` is
+    populated with those actually acknowledged on output.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    state: Optional[TaskStateType] = None
+    trackingRecord: Optional[TrackingRecord] = None
+    problem: Optional[List[ServiceProblemRef]] = field(default_factory=list)
+    ackProblem: Optional[List[ServiceProblemRef]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}"
+            "/serviceProblemManagement/v5/problemAcknowledgement"
+        )
+
+
+@dataclass(repr=False)
+class ProblemUnacknowledgement(Entity, BaseCRUDMixin):
+    """Task resource rolling a set of service problems back from acknowledged to
+    submitted.
+
+    ``problem`` carries the problems to unacknowledge on input; ``unackProblem``
+    is populated with those actually unacknowledged on output.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    state: Optional[TaskStateType] = None
+    trackingRecord: Optional[TrackingRecord] = None
+    problem: Optional[List[ServiceProblemRef]] = field(default_factory=list)
+    unackProblem: Optional[List[ServiceProblemRef]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return (
+            f"{context.api_base_url}"
+            "/serviceProblemManagement/v5/problemUnacknowledgement"
+        )
+
+
+@dataclass(repr=False)
+class ProblemGroup(Entity, BaseCRUDMixin):
+    """Task resource grouping service problems under a parent problem."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    state: Optional[TaskStateType] = None
+    parentProblem: Optional[ServiceProblemRef] = None
+    childProblem: Optional[List[ServiceProblemRef]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/serviceProblemManagement/v5/problemGroup"
+
+
+@dataclass(repr=False)
+class ProblemUngroup(Entity, BaseCRUDMixin):
+    """Task resource detaching service problems from a parent problem."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    state: Optional[TaskStateType] = None
+    parentProblem: Optional[ServiceProblemRef] = None
+    childProblem: Optional[List[ServiceProblemRef]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/serviceProblemManagement/v5/problemUngroup"

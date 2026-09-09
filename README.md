@@ -96,6 +96,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF771 Resource Usage Management | `resourceUsageManagement/v5` | `ResourceUsage`, `ResourceUsageSpecification` |
 | TMF683 Party Interaction | `partyInteraction/v5` | `PartyInteraction`, `InteractionItem` |
 | TMF656 Service Problem | `serviceProblemManagement/v5` | `ServiceProblem`, `ServiceProblemEventRecord`, `ProblemAcknowledgement`, `ProblemUnacknowledgement`, `ProblemGroup`, `ProblemUngroup` |
+| TMF677 Usage Consumption | `usageConsumption/v5` | `QueryUsageConsumption`, `UsageConsumptionReport`, `Bucket`, `BucketCounter`, `ConsumptionSummary` |
 
 ## How it works
 

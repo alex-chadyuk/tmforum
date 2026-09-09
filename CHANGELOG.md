@@ -4,6 +4,59 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.26.0 — 2026-09-09
+
+Source spec: TMF677 Usage Consumption v5.1.0.
+
+First coverage of the Usage Consumption API. Both REST resources of TMF677 were missing:
+the `UsageConsumptionReport` that exposes the balances and consumption counters of the
+buckets a party consumes, and the `QueryUsageConsumption` task that requests its
+calculation. The bucket model the report embeds (owned by TMF654 Prepay Balance
+Management) was also absent and is added here as value objects without CRUD. The party,
+product, quantity, time-period, characteristic and error structures were already present.
+
+### Added
+
+- `UsageConsumptionReport` (CRUD, `usageConsumption/v5/usageConsumptionReport`) — balances
+  and consumption counters calculated at a given point for a device, a subscribed offer or
+  option, or a user. Fields: `id`, `href`, `name`, `description`, `creationDate`,
+  `lastUpdate`, `validPeriod`, `bucket` (`Bucket` or `BucketRef`), `relatedParty`,
+  `partyAccount`, `product`, `logicalResource`.
+- `QueryUsageConsumption` (CRUD, `.../queryUsageConsumption`) — task resource extending
+  `TaskResource` that requests the calculation of a usage consumption report; the search
+  criteria are a partial `UsageConsumptionReport` (`id`, `href`, `state`, `errorMessage`,
+  `creationDate`, `searchCriteria`, `usageConsumption`, `relatedParty`, `partyAccount`).
+- `Bucket` — a bucket (UsageVolumeProduct in SID) tracking a remaining or consumed quantity
+  of usage (`id`, `href`, `name`, `description`, `usageType`, `isShared`, `creationDate`,
+  `relatedParty`, `partyAccount`, `product`, `logicalResource`, `bucketSpecification`,
+  `bucketRelationship`, `bucketCounter`, `reserveBalance`, `reservedValue`,
+  `remainingValue`, `remainingValueName`, `status`, `validFor`).
+- `BucketCounter` — a consumption counter (meter) against a bucket (`id`, `href`,
+  `consumptionPeriod`, `counterType`, `level`, `user`, `value`, `valueName`,
+  `characteristic`).
+- `ConsumptionSummary` — subtype of `BucketCounter` with no extra fields, present as a
+  distinct wire `@type`.
+- `EntityRelationship` — generic v5 relationship base (an `EntityRef` plus `role`,
+  `validFor`, `associationSpec`, `relationshipType`), reusable by other specs.
+- `BucketRelationship` — `EntityRelationship` subtype linking a bucket to an aggregated or
+  aggregating bucket (`bucket` as `Bucket` or `BucketRef`).
+- `BucketStatusType` enum — `active`, `suspended`, `expired`.
+- Refs: `BucketRef` (with `usageType`), `BucketSpecificationRef`, `BalanceActionRef`,
+  `ReserveBalanceRef`, `LogicalResourceRef` (with `value`, e.g. an MSISDN),
+  `PartyAccountRef` (subtype of `AccountRef`, adds `status`),
+  `UsageConsumptionProductRef` (subtype of `ProductRef`, adds `consumptionSummary`).
+
+### Notes
+
+- `QueryUsageConsumption.state` uses the existing `TaskStateType`, a superset of the values
+  TMF677 lists (the SDK enum also carries `accepted`).
+- `Bucket`, `BucketCounter` and `ConsumptionSummary` are not REST resources of TMF677 (they
+  belong to TMF654), so they carry no `get_resource_path`.
+- `Quantity` keeps its existing shape (required `units`/`amount`, `amount` typed `int`);
+  TMF677 types `amount` as a float.
+- Field sets are the union of each schema's base and `_FVO` variants; TMF677 has no `_MVO`
+  variants and its `_FVO` variants add no fields beyond the base.
+
 ## 0.25.0 — 2026-09-09
 
 Source spec: TMF656 Service Problem Management v5.0.0.

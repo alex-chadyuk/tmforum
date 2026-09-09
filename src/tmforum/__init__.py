@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.25.0"
+__version__ = "0.26.0"
 
 
 @dataclass
@@ -601,6 +601,13 @@ class BillFormatBasePresentationType(enum.Enum):
     PRINT = "print"
     RENDERED = "rendered"
     PLAIN = "plain"
+
+
+@enum.unique
+class BucketStatusType(enum.Enum):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    EXPIRED = "expired"
 
 
 @enum.unique
@@ -1674,6 +1681,11 @@ class AttachmentRef(EntityRef):
 
 
 @dataclass(repr=False)
+class BalanceActionRef(EntityRef):
+    _referred_type: str = "BalanceAction"
+
+
+@dataclass(repr=False)
 class BillCycleRef(EntityRef):
     _referred_type: str = "BillCycle"
 
@@ -1703,6 +1715,17 @@ class BillFormatRef(EntityRef):
 @dataclass(repr=False)
 class BillPresentationMediaRef(EntityRef):
     _referred_type: str = "BillPresentationMedia"
+
+
+@dataclass(repr=False)
+class BucketRef(EntityRef):
+    _referred_type: str = "Bucket"
+    usageType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class BucketSpecificationRef(EntityRef):
+    _referred_type: str = "BucketSpecification"
 
 
 @dataclass(repr=False)
@@ -1757,6 +1780,22 @@ class EndpointSpecificationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class EntityRelationship(EntityRef):
+    """A uni-directional relationship from an entity to a target entity instance."""
+
+    role: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    associationSpec: Optional[EntityRef] = None
+    relationshipType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class BucketRelationship(EntityRelationship):
+    _referred_type: str = "Bucket"
+    bucket: Optional[Union[Bucket, BucketRef]] = None
+
+
+@dataclass(repr=False)
 class EntitySpecificationRef(EntityRef):
     _referred_type: str = "EntitySpecification"
     version: Optional[str] = None
@@ -1808,6 +1847,12 @@ class GeographicLocationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class LogicalResourceRef(EntityRef):
+    _referred_type: str = "LogicalResource"
+    value: Optional[str] = None
+
+
+@dataclass(repr=False)
 class MarketingCampaignRef(EntityRef):
     _referred_type: str = "MarketingCampaign"
 
@@ -1820,6 +1865,12 @@ class MarketSegmentRef(EntityRef):
 @dataclass(repr=False)
 class PaymentPlanRef(EntityRef):
     _referred_type: str = "PaymentPlan"
+
+
+@dataclass(repr=False)
+class PartyAccountRef(AccountRef):
+    _referred_type: str = "PartyAccount"
+    status: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -2005,6 +2056,11 @@ class RelatedOrderItem(EntityRef):
 
 
 @dataclass(repr=False)
+class ReserveBalanceRef(BalanceActionRef):
+    _referred_type: str = "ReserveBalance"
+
+
+@dataclass(repr=False)
 class ResourceAlarmRef(EntityRef):
     _referred_type: Optional[str] = "ResourceAlarm"
     changeRequest: Optional[EntityRef] = None
@@ -2145,6 +2201,11 @@ class SLAViolationRef(EntityRef):
 @dataclass(repr=False)
 class TroubleTicketRef(EntityRef):
     _referred_type: Optional[str] = "TroubleTicket"
+
+
+@dataclass(repr=False)
+class UsageConsumptionProductRef(ProductRef):
+    consumptionSummary: Optional[List[ConsumptionSummary]] = field(default_factory=list)
 
 
 ################
@@ -7486,3 +7547,106 @@ class ProblemUngroup(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/serviceProblemManagement/v5/problemUngroup"
+
+
+@dataclass(repr=False)
+class BucketCounter(Entity):
+    """A consumption counter (meter) against a bucket, e.g. used or out-of-bucket (TMF677)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    consumptionPeriod: Optional[TimePeriod] = None
+    counterType: Optional[str] = None
+    level: Optional[str] = None
+    user: Optional[RelatedPartyRefOrPartyRoleRef] = None
+    value: Optional[Quantity] = None
+    valueName: Optional[str] = None
+    characteristic: Optional[List[Characteristic]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class ConsumptionSummary(BucketCounter):
+    """Consumption counter detailing one kind of usage consumption of a product (TMF677)."""
+
+
+@dataclass(repr=False)
+class Bucket(Entity):
+    """A bucket (UsageVolumeProduct in SID) tracking a quantity of usage (TMF677).
+
+    Represents a remaining or consumed quantity — a number of SMS, call minutes,
+    data volume or an amount in a currency — with its counters and balance.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    usageType: Optional[str] = None
+    isShared: Optional[bool] = None
+    creationDate: Optional[str] = None
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    partyAccount: Optional[PartyAccountRef] = None
+    product: Optional[List[ProductRef]] = field(default_factory=list)
+    logicalResource: Optional[List[LogicalResourceRef]] = field(default_factory=list)
+    bucketSpecification: Optional[BucketSpecificationRef] = None
+    bucketRelationship: Optional[List[BucketRelationship]] = field(default_factory=list)
+    bucketCounter: Optional[List[BucketCounter]] = field(default_factory=list)
+    reserveBalance: Optional[List[ReserveBalanceRef]] = field(default_factory=list)
+    reservedValue: Optional[Quantity] = None
+    remainingValue: Optional[Quantity] = None
+    remainingValueName: Optional[str] = None
+    status: Optional[BucketStatusType] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class UsageConsumptionReport(Entity, BaseCRUDMixin):
+    """Balances and consumption counters of the buckets a party consumes (TMF677).
+
+    Calculated at a given point for a device identified by a public key (MSISDN,
+    PSTN or VoIP number), for a subscribed offer or option, or for a user.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validPeriod: Optional[TimePeriod] = None
+    bucket: Optional[List[Union[Bucket, BucketRef]]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    partyAccount: Optional[List[PartyAccountRef]] = field(default_factory=list)
+    product: Optional[List[UsageConsumptionProductRef]] = field(default_factory=list)
+    logicalResource: Optional[List[LogicalResourceRef]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/usageConsumption/v5/usageConsumptionReport"
+
+
+@dataclass(repr=False)
+class QueryUsageConsumption(TaskResource, BaseCRUDMixin):
+    """Task resource requesting the calculation of a usage consumption report (TMF677).
+
+    The search criteria are expressed as a partial `UsageConsumptionReport`; once the
+    task is done the calculated report(s) are returned in `usageConsumption`.
+    """
+
+    creationDate: Optional[str] = None
+    searchCriteria: Optional[UsageConsumptionReport] = None
+    usageConsumption: Optional[List[UsageConsumptionReport]] = field(
+        default_factory=list
+    )
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    partyAccount: Optional[List[PartyAccountRef]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/usageConsumption/v5/queryUsageConsumption"

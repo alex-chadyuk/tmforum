@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.29.0"
+__version__ = "0.29.1"
 
 
 @dataclass
@@ -332,6 +332,9 @@ class Entity:
                         new_list = []
                         for item in value:
                             if isinstance(item, dict):
+                                # Reset per item, so an item that cannot be parsed is
+                                # dropped rather than replaced by the previous item.
+                                instantiated_item = None
                                 if type_name := item.get("@type"):
                                     cls_candidate = module_dict.get(type_name)
                                     if (
@@ -355,10 +358,10 @@ class Entity:
                                                 pass
                                 else:
                                     instantiated_item = item_type.from_dict(item)
-                                try:
-                                    new_list.append(instantiated_item)
-                                except UnboundLocalError as e:
+                                if instantiated_item is None:
                                     print(f"WARNING!  Unknown entity type {type_name}")
+                                else:
+                                    new_list.append(instantiated_item)
 
                             else:
                                 new_list.append(item)

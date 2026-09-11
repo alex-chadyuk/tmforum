@@ -4,6 +4,17 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.29.1 — 2026-09-11
+
+### Fixed
+
+- `Entity.from_dict` no longer corrupts a list field that contains an item it cannot
+  parse: an item whose `"@type"` names no `Entity` class of the module, or an untyped item
+  of a `List[Union[A, B]]` field that no member parses. Such an item was dropped only when
+  nothing before it in the list had parsed; otherwise the previously parsed item was
+  appended again in its place, silently. It is now always dropped, and each dropped item
+  prints the `WARNING!  Unknown entity type` message.
+
 ## 0.29.0 — 2026-09-11
 
 Source spec: TMF701 Process Management v5.0.0.

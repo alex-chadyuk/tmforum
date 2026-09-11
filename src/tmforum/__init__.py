@@ -1680,8 +1680,7 @@ class AccountRef(EntityRef):
 
 @dataclass(repr=False)
 class AgreementItemRef(ItemRef):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+    _referred_type: str = "AgreementItem"
 
 
 @dataclass(repr=False)
@@ -7694,7 +7693,7 @@ class QueryUsageConsumption(TaskResource, BaseCRUDMixin):
 
 
 @dataclass(repr=False)
-class Customer360CustomerVO(Entity):
+class Customer360Customer(Entity):
     """Summary of the customer a Customer360 overview is built for (TMF717)."""
 
     id: Optional[str] = None
@@ -7708,7 +7707,7 @@ class Customer360CustomerVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360AccountVO(Entity):
+class Customer360Account(Entity):
     """Summary of an account of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7721,7 +7720,7 @@ class Customer360AccountVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360LoyaltyAccountVO(Customer360AccountVO):
+class Customer360LoyaltyAccount(Customer360Account):
     """Summary of a loyalty account of a customer, with its balances (TMF717)."""
 
     accountBalance: Optional[List[AccountBalance]] = field(default_factory=list)
@@ -7732,7 +7731,7 @@ class Customer360LoyaltyAccountVO(Customer360AccountVO):
 
 
 @dataclass(repr=False)
-class Customer360AgreementVO(Entity):
+class Customer360Agreement(Entity):
     """Summary of an agreement of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7748,7 +7747,7 @@ class Customer360AgreementVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360AppointmentVO(Entity):
+class Customer360Appointment(Entity):
     """Summary of an appointment of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7764,7 +7763,7 @@ class Customer360AppointmentVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360CustomerBillVO(Entity):
+class Customer360CustomerBill(Entity):
     """Summary of a bill of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7775,7 +7774,7 @@ class Customer360CustomerBillVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360PartyInteractionVO(Entity):
+class Customer360PartyInteraction(Entity):
     """Summary of a party interaction of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7787,7 +7786,7 @@ class Customer360PartyInteractionVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360PaymentMethodVO(Entity):
+class Customer360PaymentMethod(Entity):
     """Summary of a payment method of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7801,7 +7800,7 @@ class Customer360PaymentMethodVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360ProductOrderVO(Entity):
+class Customer360ProductOrder(Entity):
     """Summary of a product order of a customer, with its order items (TMF717)."""
 
     id: Optional[str] = None
@@ -7818,7 +7817,7 @@ class Customer360ProductOrderVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360ProductVO(Entity):
+class Customer360Product(Entity):
     """Summary of a product of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7830,7 +7829,7 @@ class Customer360ProductVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360PromotionVO(Entity):
+class Customer360Promotion(Entity):
     """Summary of a promotion of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7844,7 +7843,7 @@ class Customer360PromotionVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360QuoteVO(Entity):
+class Customer360Quote(Entity):
     """Summary of a quote of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7861,7 +7860,7 @@ class Customer360QuoteVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360ServiceProblemVO(Entity):
+class Customer360ServiceProblem(Entity):
     """Summary of a service problem of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7876,7 +7875,7 @@ class Customer360ServiceProblemVO(Entity):
 
 
 @dataclass(repr=False)
-class Customer360TroubleTicketVO(Entity):
+class Customer360TroubleTicket(Entity):
     """Summary of a trouble ticket of a customer (TMF717)."""
 
     id: Optional[str] = None
@@ -7907,32 +7906,32 @@ class Customer360(Entity, BaseCRUDMixin):
 
     id: Optional[str] = None
     href: Optional[str] = None
-    customer: Optional[Customer360CustomerVO] = None
-    account: Optional[List[Customer360AccountVO]] = field(default_factory=list)
-    agreement: Optional[List[Customer360AgreementVO]] = field(default_factory=list)
-    appointment: Optional[List[Customer360AppointmentVO]] = field(default_factory=list)
-    customerBill: Optional[List[Customer360CustomerBillVO]] = field(
+    customer: Optional[Customer360Customer] = None
+    account: Optional[List[Customer360Account]] = field(default_factory=list)
+    agreement: Optional[List[Customer360Agreement]] = field(default_factory=list)
+    appointment: Optional[List[Customer360Appointment]] = field(default_factory=list)
+    customerBill: Optional[List[Customer360CustomerBill]] = field(
         default_factory=list
     )
-    partyInteraction: Optional[List[Customer360PartyInteractionVO]] = field(
+    partyInteraction: Optional[List[Customer360PartyInteraction]] = field(
         default_factory=list
     )
-    loyaltyAccount: Optional[List[Customer360LoyaltyAccountVO]] = field(
+    loyaltyAccount: Optional[List[Customer360LoyaltyAccount]] = field(
         default_factory=list
     )
-    paymentMethod: Optional[List[Customer360PaymentMethodVO]] = field(
+    paymentMethod: Optional[List[Customer360PaymentMethod]] = field(
         default_factory=list
     )
-    productOrder: Optional[List[Customer360ProductOrderVO]] = field(
+    productOrder: Optional[List[Customer360ProductOrder]] = field(
         default_factory=list
     )
-    product: Optional[List[Customer360ProductVO]] = field(default_factory=list)
-    promotion: Optional[List[Customer360PromotionVO]] = field(default_factory=list)
-    quote: Optional[List[Customer360QuoteVO]] = field(default_factory=list)
-    serviceProblem: Optional[List[Customer360ServiceProblemVO]] = field(
+    product: Optional[List[Customer360Product]] = field(default_factory=list)
+    promotion: Optional[List[Customer360Promotion]] = field(default_factory=list)
+    quote: Optional[List[Customer360Quote]] = field(default_factory=list)
+    serviceProblem: Optional[List[Customer360ServiceProblem]] = field(
         default_factory=list
     )
-    troubleTicket: Optional[List[Customer360TroubleTicketVO]] = field(
+    troubleTicket: Optional[List[Customer360TroubleTicket]] = field(
         default_factory=list
     )
     validFor: Optional[TimePeriod] = None

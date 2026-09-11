@@ -231,3 +231,6 @@ Thumbs.db
 
 # Swagger files
 _swagger/
+
+# VSCode
+.vscode/

@@ -7,20 +7,20 @@ from tmforum import (
     CalendarEventRef,
     Context,
     Customer360,
-    Customer360AccountVO,
-    Customer360AgreementVO,
-    Customer360AppointmentVO,
-    Customer360CustomerBillVO,
-    Customer360CustomerVO,
-    Customer360LoyaltyAccountVO,
-    Customer360PartyInteractionVO,
-    Customer360PaymentMethodVO,
-    Customer360ProductOrderVO,
-    Customer360ProductVO,
-    Customer360PromotionVO,
-    Customer360QuoteVO,
-    Customer360ServiceProblemVO,
-    Customer360TroubleTicketVO,
+    Customer360Account,
+    Customer360Agreement,
+    Customer360Appointment,
+    Customer360CustomerBill,
+    Customer360Customer,
+    Customer360LoyaltyAccount,
+    Customer360PartyInteraction,
+    Customer360PaymentMethod,
+    Customer360ProductOrder,
+    Customer360Product,
+    Customer360Promotion,
+    Customer360Quote,
+    Customer360ServiceProblem,
+    Customer360TroubleTicket,
     CustomerBillStateType,
     Duration,
     ExternalIdentifier,
@@ -60,7 +60,7 @@ def customer360_dict():
             "endDateTime": "2019-01-11T00:00:00.000Z",
         },
         "customer": {
-            "@type": "Customer360CustomerVO",
+            "@type": "Customer360Customer",
             "href": "https://host:port/tmf-api/customerManagement/v5/customer/1140",
             "id": "1140",
             "name": "Moon Football Club",
@@ -121,7 +121,7 @@ def customer360_dict():
         },
         "account": [
             {
-                "@type": "Customer360AccountVO",
+                "@type": "Customer360Account",
                 "href": "https://host:port/tmf-api/accountManagement/v5/account/5430",
                 "id": "5430",
                 "accountType": "Business",
@@ -133,7 +133,7 @@ def customer360_dict():
         ],
         "agreement": [
             {
-                "@type": "Customer360AgreementVO",
+                "@type": "Customer360Agreement",
                 "href": "https://host:port/tmf-api/agreementManagement/v4/agreement/28",
                 "id": "28",
                 "name": "Summer Contract Agreement",
@@ -170,7 +170,7 @@ def customer360_dict():
         ],
         "appointment": [
             {
-                "@type": "Customer360AppointmentVO",
+                "@type": "Customer360Appointment",
                 "href": "https://serverRoot/tmf-api/appointment/v4/appointment/21",
                 "id": "21",
                 "calendarEvent": {
@@ -193,14 +193,14 @@ def customer360_dict():
         ],
         "customerBill": [
             {
-                "@type": "Customer360CustomerBillVO",
+                "@type": "Customer360CustomerBill",
                 "id": "CB-123",
                 "billNo": "33-34198237",
                 "category": "Monthly",
                 "state": "sent",
             },
             {
-                "@type": "Customer360CustomerBillVO",
+                "@type": "Customer360CustomerBill",
                 "id": "CB-124",
                 "billNo": "780123456",
                 "category": "normal",
@@ -209,7 +209,7 @@ def customer360_dict():
         ],
         "loyaltyAccount": [
             {
-                "@type": "Customer360LoyaltyAccountVO",
+                "@type": "Customer360LoyaltyAccount",
                 "@baseType": "PartyAccount",
                 "id": "12345",
                 "description": "Loyalty account for loyalty program member",
@@ -253,7 +253,7 @@ def customer360_dict():
         ],
         "partyInteraction": [
             {
-                "@type": "Customer360PartyInteractionVO",
+                "@type": "Customer360PartyInteraction",
                 "id": "123",
                 "interactionDate": {
                     "startDateTime": "2019-10-02T11:36:18.758Z",
@@ -266,7 +266,7 @@ def customer360_dict():
         ],
         "paymentMethod": [
             {
-                "@type": "Customer360PaymentMethodVO",
+                "@type": "Customer360PaymentMethod",
                 "id": "12345",
                 "description": "My gold mastercard",
                 "isPreferred": True,
@@ -281,7 +281,7 @@ def customer360_dict():
         ],
         "productOrder": [
             {
-                "@type": "Customer360ProductOrderVO",
+                "@type": "Customer360ProductOrder",
                 "id": "30001",
                 "category": "B2C product order",
                 "completionDate": "2019-05-02T08:13:59.506Z",
@@ -322,7 +322,7 @@ def customer360_dict():
         ],
         "product": [
             {
-                "@type": "Customer360ProductVO",
+                "@type": "Customer360Product",
                 "id": "g265-tf85",
                 "description": "product description",
                 "name": "Voice Over IP Basic instance for Jean",
@@ -337,7 +337,7 @@ def customer360_dict():
         ],
         "promotion": [
             {
-                "@type": "Customer360PromotionVO",
+                "@type": "Customer360Promotion",
                 "id": "promo-7",
                 "name": "Summer double data",
                 "description": "Double data allowance for three months",
@@ -352,7 +352,7 @@ def customer360_dict():
         ],
         "quote": [
             {
-                "@type": "Customer360QuoteVO",
+                "@type": "Customer360Quote",
                 "id": "12dd-78hg",
                 "category": "BSBS Quote",
                 "creationDate": "2021-05-05T12:45:12.028Z",
@@ -370,7 +370,7 @@ def customer360_dict():
         ],
         "serviceProblem": [
             {
-                "@type": "Customer360ServiceProblemVO",
+                "@type": "Customer360ServiceProblem",
                 "id": "problemxxxx0000",
                 "affectedService": [
                     {
@@ -394,7 +394,7 @@ def customer360_dict():
         ],
         "troubleTicket": [
             {
-                "@type": "Customer360TroubleTicketVO",
+                "@type": "Customer360TroubleTicket",
                 "id": "3180",
                 "creationDate": "2019-05-31T07:34:45.968Z",
                 "description": "I do not accept the last VOD charge",
@@ -432,7 +432,7 @@ def test_customer360_instantiates_with_id(customer360_1):
 def test_customer360_instantiates_customer(customer360_1):
     customer = customer360_1.customer
 
-    assert isinstance(customer, Customer360CustomerVO)
+    assert isinstance(customer, Customer360Customer)
     assert customer.name == "Moon Football Club"
     assert customer.status == "Approved"
     assert isinstance(customer.validFor, TimePeriod)
@@ -453,13 +453,13 @@ def test_customer360_instantiates_customer(customer360_1):
 def test_customer360_instantiates_accounts(customer360_1):
     account = customer360_1.account[0]
 
-    assert isinstance(account, Customer360AccountVO)
+    assert isinstance(account, Customer360Account)
     assert account.accountType == "Business"
     assert account.state == "Inactive"
 
     loyalty = customer360_1.loyaltyAccount[0]
-    assert isinstance(loyalty, Customer360LoyaltyAccountVO)
-    assert isinstance(loyalty, Customer360AccountVO)
+    assert isinstance(loyalty, Customer360LoyaltyAccount)
+    assert isinstance(loyalty, Customer360Account)
     assert loyalty.name == "Loyalty Account"
     assert loyalty.accountType == "Loyalty Account"
 
@@ -482,7 +482,7 @@ def test_customer360_instantiates_accounts(customer360_1):
 def test_customer360_instantiates_agreement(customer360_1):
     agreement = customer360_1.agreement[0]
 
-    assert isinstance(agreement, Customer360AgreementVO)
+    assert isinstance(agreement, Customer360Agreement)
     assert agreement.agreementType == "commercial"
     assert agreement.status == "inProgress"
     assert isinstance(agreement.agreementPeriod, TimePeriod)
@@ -501,7 +501,7 @@ def test_customer360_instantiates_agreement(customer360_1):
 def test_customer360_instantiates_appointment(customer360_1):
     appointment = customer360_1.appointment[0]
 
-    assert isinstance(appointment, Customer360AppointmentVO)
+    assert isinstance(appointment, Customer360Appointment)
     assert appointment.status is AppointmentStateType.CONFIRMED
     assert appointment.externalId == "432113"
     assert isinstance(appointment.validFor, TimePeriod)
@@ -515,18 +515,18 @@ def test_customer360_instantiates_bills_interactions_and_payment_methods(
 ):
     bills = customer360_1.customerBill
 
-    assert all(isinstance(b, Customer360CustomerBillVO) for b in bills)
+    assert all(isinstance(b, Customer360CustomerBill) for b in bills)
     assert bills[0].state is CustomerBillStateType.SENT
     assert bills[1].state is CustomerBillStateType.SETTLED
     assert bills[1].billNo == "780123456"
 
     interaction = customer360_1.partyInteraction[0]
-    assert isinstance(interaction, Customer360PartyInteractionVO)
+    assert isinstance(interaction, Customer360PartyInteraction)
     assert isinstance(interaction.interactionDate, TimePeriod)
     assert interaction.status == "ongoing"
 
     payment_method = customer360_1.paymentMethod[0]
-    assert isinstance(payment_method, Customer360PaymentMethodVO)
+    assert isinstance(payment_method, Customer360PaymentMethod)
     assert payment_method.isPreferred is True
     assert payment_method.statusDate == "2021-03-17T00:00:00.000Z"
 
@@ -534,7 +534,7 @@ def test_customer360_instantiates_bills_interactions_and_payment_methods(
 def test_customer360_instantiates_product_order(customer360_1):
     order = customer360_1.productOrder[0]
 
-    assert isinstance(order, Customer360ProductOrderVO)
+    assert isinstance(order, Customer360ProductOrder)
     assert order.state is ProductOrderStateType.COMPLETED
     assert order.priority == "1"
 
@@ -555,18 +555,18 @@ def test_customer360_instantiates_product_order(customer360_1):
 def test_customer360_instantiates_products_promotions_and_quotes(customer360_1):
     product = customer360_1.product[0]
 
-    assert isinstance(product, Customer360ProductVO)
+    assert isinstance(product, Customer360Product)
     assert product.status is ProductStatusType.ACTIVE
     assert isinstance(product.productOffering, ProductOfferingRef)
 
     promotion = customer360_1.promotion[0]
-    assert isinstance(promotion, Customer360PromotionVO)
+    assert isinstance(promotion, Customer360Promotion)
     assert promotion.type == "discount"
     assert promotion.lifecycleStatus == "active"
     assert isinstance(promotion.validFor, TimePeriod)
 
     quote = customer360_1.quote[0]
-    assert isinstance(quote, Customer360QuoteVO)
+    assert isinstance(quote, Customer360Quote)
     assert quote.state is QuoteStateTypeEnum.APPROVED
     assert quote.version == "1"
     assert isinstance(quote.validFor, TimePeriod)
@@ -575,7 +575,7 @@ def test_customer360_instantiates_products_promotions_and_quotes(customer360_1):
 def test_customer360_instantiates_problems_and_tickets(customer360_1):
     problem = customer360_1.serviceProblem[0]
 
-    assert isinstance(problem, Customer360ServiceProblemVO)
+    assert isinstance(problem, Customer360ServiceProblem)
     assert problem.priority == 1
     assert problem.status == "resolved"
     assert [s.id for s in problem.affectedService] == [
@@ -585,7 +585,7 @@ def test_customer360_instantiates_problems_and_tickets(customer360_1):
     assert all(isinstance(s, ServiceRef) for s in problem.affectedService)
 
     ticket = customer360_1.troubleTicket[0]
-    assert isinstance(ticket, Customer360TroubleTicketVO)
+    assert isinstance(ticket, Customer360TroubleTicket)
     assert ticket.status is TroubleTicketStatusType.PENDING
     assert ticket.externalIdentifier == "213-9909"
     assert ticket.ticketType == "Bill Dispute"
@@ -612,29 +612,29 @@ def test_customer360_defaults_to_empty_lists():
 
 
 def test_value_objects_default_to_empty_lists():
-    assert Customer360CustomerVO().contactMedium == []
-    assert Customer360CustomerVO().relatedParty == []
-    assert Customer360LoyaltyAccountVO().accountBalance == []
-    assert Customer360LoyaltyAccountVO().externalIdentifier == []
-    assert Customer360AgreementVO().engagedParty == []
-    assert Customer360ProductOrderVO().productOrderItem == []
-    assert Customer360ServiceProblemVO().affectedService == []
+    assert Customer360Customer().contactMedium == []
+    assert Customer360Customer().relatedParty == []
+    assert Customer360LoyaltyAccount().accountBalance == []
+    assert Customer360LoyaltyAccount().externalIdentifier == []
+    assert Customer360Agreement().engagedParty == []
+    assert Customer360ProductOrder().productOrderItem == []
+    assert Customer360ServiceProblem().affectedService == []
     assert ProductOrderItem().itemTerm == []
 
 
 def test_customer360_rejects_non_list_account():
     with pytest.raises(ValueError):
-        Customer360(account=Customer360AccountVO(id="5430"))
+        Customer360(account=Customer360Account(id="5430"))
 
 
 def test_loyalty_account_rejects_non_list_balance():
     with pytest.raises(ValueError):
-        Customer360LoyaltyAccountVO(accountBalance=AccountBalance(id="AB123"))
+        Customer360LoyaltyAccount(accountBalance=AccountBalance(id="AB123"))
 
 
 def test_customer360_unknown_status_passes_through():
-    ticket = Customer360TroubleTicketVO.from_dict(
-        {"@type": "Customer360TroubleTicketVO", "id": "1", "status": "submitted"}
+    ticket = Customer360TroubleTicket.from_dict(
+        {"@type": "Customer360TroubleTicket", "id": "1", "status": "submitted"}
     )
 
     assert ticket.status == "submitted"
@@ -676,12 +676,12 @@ def test_trouble_ticket_status_type_values():
     ],
 )
 def test_quote_state_type_covers_customer360_values(value, member):
-    quote_vo = Customer360QuoteVO.from_dict(
-        {"@type": "Customer360QuoteVO", "id": "q-1", "state": value}
+    quote_ = Customer360Quote.from_dict(
+        {"@type": "Customer360Quote", "id": "q-1", "state": value}
     )
     quote = Quote.from_dict({"@type": "Quote", "id": "q-1", "state": value})
 
-    assert quote_vo.state is member
+    assert quote_.state is member
     assert quote.state is member
 
 
@@ -710,23 +710,23 @@ def test_customer360_to_dict_round_trip(customer360_dict):
     assert result["validFor"]["startDateTime"] == "2018-06-13T00:00:00.000Z"
 
     customer = result["customer"]
-    assert customer["@type"] == "Customer360CustomerVO"
+    assert customer["@type"] == "Customer360Customer"
     assert "@baseType" not in customer
     assert customer["contactMedium"][0]["@type"] == "PhoneContactMedium"
     assert customer["contactMedium"][0]["@baseType"] == "ContactMedium"
     assert customer["engagedParty"]["@referredType"] == "Organization"
     assert customer["relatedParty"][0]["partyOrPartyRole"]["@type"] == "PartyRef"
 
-    assert result["account"][0]["@type"] == "Customer360AccountVO"
+    assert result["account"][0]["@type"] == "Customer360Account"
 
     loyalty = result["loyaltyAccount"][0]
-    assert loyalty["@type"] == "Customer360LoyaltyAccountVO"
-    assert loyalty["@baseType"] == "Customer360AccountVO"
+    assert loyalty["@type"] == "Customer360LoyaltyAccount"
+    assert loyalty["@baseType"] == "Customer360Account"
     assert loyalty["accountBalance"][0]["amount"]["unit"] == "POINTS"
     assert loyalty["externalIdentifier"][0]["id"] == "LH-99812"
 
     agreement = result["agreement"][0]
-    assert agreement["@type"] == "Customer360AgreementVO"
+    assert agreement["@type"] == "Customer360Agreement"
     assert agreement["agreementSpecification"]["@type"] == "AgreementSpecificationRef"
     assert (
         agreement["agreementSpecification"]["@referredType"] == "AgreementSpecification"
@@ -741,7 +741,7 @@ def test_customer360_to_dict_round_trip(customer360_dict):
     assert appointment["calendarEvent"]["@referredType"] == "CalendarEvent"
 
     assert result["customerBill"][1]["state"] == "settled"
-    assert result["partyInteraction"][0]["@type"] == "Customer360PartyInteractionVO"
+    assert result["partyInteraction"][0]["@type"] == "Customer360PartyInteraction"
     assert result["paymentMethod"][0]["isPreferred"] is True
 
     order = result["productOrder"][0]

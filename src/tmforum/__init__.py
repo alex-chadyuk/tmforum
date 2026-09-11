@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.27.0"
+__version__ = "0.28.0"
 
 
 @dataclass
@@ -309,6 +309,7 @@ class Entity:
                             ):
                                 try:
                                     value = fallback_type.from_dict(value)
+                                    break
                                 except ValueError:
                                     pass
 
@@ -1856,6 +1857,16 @@ class IntentSpecificationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class IntentSpecificationRelationship(EntityRef):
+    """A substitution, dependency or exclusivity relationship to another IntentSpecification."""
+
+    _referred_type: str = "IntentSpecification"
+    role: Optional[str] = None
+    relationshipType: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
 class InteractionRelationship(EntityRef):
     """A relationship from one party interaction to another (TMF683)."""
 
@@ -2475,9 +2486,183 @@ class FulfilmentData(Entity):
 
 
 @dataclass(repr=False)
-class Intent(Entity):
-    def __post_init__(self):
-        raise NotImplementedError(f"{self.__class__.__name__} is not implemented yet.")
+class IntentExpression(Entity):
+    """An intent expression, identified by the IRI of its ontology (TMF921)."""
+
+    iri: Optional[str] = None
+
+
+@dataclass(repr=False)
+class JsonLdExpression(IntentExpression):
+    """Ontology-encoded form of an intent as a JSON-LD document.
+
+    `expressionValue` is kept as the raw JSON-LD value: its keys are vocabulary terms
+    and `@` keywords that cannot be dataclass fields, so it is passed through as-is.
+    """
+
+    expressionValue: Any = None
+
+
+@dataclass(repr=False)
+class TurtleExpression(IntentExpression):
+    """Ontology-encoded form of an intent as a Turtle RDF string."""
+
+    expressionValue: Optional[str] = None
+
+
+@dataclass(repr=False)
+class Intent(Entity, BaseCRUDMixin):
+    """Formal description of the expectations given to a technical system (TMF921).
+
+    An intent states requirements, goals and constraints; `expression` carries them in
+    an ontology language (JSON-LD or Turtle). The reports on an intent are a
+    sub-resource of it (`/intent/{id}/intentReport`) and are reached with
+    `get_intent_reports`, `get_intent_report` and `delete_intent_report`.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    priority: Optional[str] = None
+    context: Optional[str] = None
+    isBundle: Optional[bool] = None
+    lifecycleStatus: Optional[str] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    statusChangeDate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    expression: Optional[IntentExpression] = None
+    intentSpecification: Optional[IntentSpecificationRef] = None
+    intentRelationship: Optional[List[EntityRelationship]] = field(default_factory=list)
+    characteristic: Optional[List[Characteristic]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/intentManagement/v5/intent"
+
+    def _intent_report_path(self, context: Context) -> str:
+        return f"{self.get_resource_path(context)}/{self.id}/intentReport"
+
+    def get_intent_reports(self, context: Context, query: Optional[str] = None):
+        """List the reports of this intent.
+
+        `query` is an optional query string (e.g. "fields=name"). Returns a list of
+        `IntentReport`, or the backend's response if it is not a list.
+        """
+        if not self.id:
+            context.logger.error(
+                f"{self.__class__.__name__}.id is undefined. Please check the {self.__class__.__name__} has been created."
+            )
+            return []
+        url = self._intent_report_path(context)
+        if query:
+            url = f"{url}?{query}"
+        response = requests.request("GET", url, headers=context.headers, data={})
+        items = parse_response(response, context)
+        if not isinstance(items, list):
+            return items
+        return [IntentReport.from_dict(item) for item in items]
+
+    def get_intent_report(self, report_id: str, context: Context):
+        """Retrieve one report of this intent by its id, or None if it is not found."""
+        if not self.id:
+            context.logger.error(
+                f"{self.__class__.__name__}.id is undefined. Please check the {self.__class__.__name__} has been created."
+            )
+            return None
+        url = f"{self._intent_report_path(context)}/{report_id}"
+        response = requests.request("GET", url, headers=context.headers, data={})
+        item = parse_response(response, context)
+        if isinstance(item, dict) and item.get("id"):
+            return IntentReport.from_dict(item)
+        return None
+
+    def delete_intent_report(self, report_id: str, context: Context):
+        """Delete one report of this intent. Returns the backend's response."""
+        if not self.id:
+            context.logger.error(
+                f"Cannot delete. {self.__class__.__name__}.id is undefined."
+            )
+            return None
+        url = f"{self._intent_report_path(context)}/{report_id}"
+        context.logger.info(f"Deleting IntentReport with id {report_id}")
+        response = requests.request("DELETE", url, headers=context.headers, data={})
+        return parse_response(response, context)
+
+
+@dataclass(repr=False)
+class ProbeIntent(Intent):
+    """Probe intent (TMF921); same fields and resource path as `Intent`."""
+
+    pass
+
+
+@dataclass(repr=False)
+class IntentReport(Entity):
+    """Report back to the intent owner on an intent's status (TMF921).
+
+    A sub-resource of `Intent` (`/intent/{intentId}/intentReport`) without CRUD of its
+    own: use `Intent.get_intent_reports`, `Intent.get_intent_report` and
+    `Intent.delete_intent_report`.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    creationDate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    expression: Optional[IntentExpression] = None
+    intent: Optional[Union[Intent, IntentRef]] = None
+
+
+@dataclass(repr=False)
+class ExpressionSpecification(Entity):
+    """Language and ontology IRI in which intents of a specification are expressed."""
+
+    expressionLanguage: Optional[str] = None
+    iri: Optional[str] = None
+
+
+@dataclass(repr=False)
+class IntentSpecification(Entity, BaseCRUDMixin):
+    """Template describing a type of intent, from which intents are instantiated (TMF921)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    isBundle: Optional[bool] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    expressionSpecification: Optional[ExpressionSpecification] = None
+    targetEntitySchema: Optional[TargetEntitySchema] = None
+    specCharacteristic: Optional[List[CharacteristicSpecification]] = field(
+        default_factory=list
+    )
+    intentSpecRelationship: Optional[List[IntentSpecificationRelationship]] = field(
+        default_factory=list
+    )
+    entitySpecRelationship: Optional[List[EntitySpecificationRelationship]] = field(
+        default_factory=list
+    )
+    constraint: Optional[List[ConstraintRef]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/intentManagement/v5/intentSpecification"
 
 
 @dataclass(repr=False)
@@ -7910,9 +8095,7 @@ class Customer360(Entity, BaseCRUDMixin):
     account: Optional[List[Customer360Account]] = field(default_factory=list)
     agreement: Optional[List[Customer360Agreement]] = field(default_factory=list)
     appointment: Optional[List[Customer360Appointment]] = field(default_factory=list)
-    customerBill: Optional[List[Customer360CustomerBill]] = field(
-        default_factory=list
-    )
+    customerBill: Optional[List[Customer360CustomerBill]] = field(default_factory=list)
     partyInteraction: Optional[List[Customer360PartyInteraction]] = field(
         default_factory=list
     )
@@ -7922,9 +8105,7 @@ class Customer360(Entity, BaseCRUDMixin):
     paymentMethod: Optional[List[Customer360PaymentMethod]] = field(
         default_factory=list
     )
-    productOrder: Optional[List[Customer360ProductOrder]] = field(
-        default_factory=list
-    )
+    productOrder: Optional[List[Customer360ProductOrder]] = field(default_factory=list)
     product: Optional[List[Customer360Product]] = field(default_factory=list)
     promotion: Optional[List[Customer360Promotion]] = field(default_factory=list)
     quote: Optional[List[Customer360Quote]] = field(default_factory=list)

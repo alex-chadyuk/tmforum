@@ -4,6 +4,75 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.28.0 — 2026-09-11
+
+Source spec: TMF921 Intent Management v5.0.0.
+
+First coverage of the Intent Management API. `Intent` existed only as a
+`NotImplementedError` placeholder that raised on construction; it is now a real dataclass,
+joined by the other two REST resources of TMF921, `IntentSpecification` and the
+`IntentReport` sub-resource, and by the expression types that carry an intent's
+ontology-encoded content. The characteristic, attachment, party, relationship and
+specification structures they embed were already present.
+
+### Added
+
+- `Intent` (CRUD, `intentManagement/v5/intent`) — replaces the placeholder. Fields: `id`,
+  `href`, `name`, `description`, `version`, `priority`, `context`, `isBundle`,
+  `lifecycleStatus`, `creationDate`, `lastUpdate`, `statusChangeDate`, `validFor`,
+  `expression`, `intentSpecification` (`IntentSpecificationRef`), `intentRelationship`
+  (`EntityRelationship`), `characteristic`, `relatedParty`, `attachment`.
+- `Intent.get_intent_reports(context, query=None)`, `Intent.get_intent_report(report_id,
+  context)` and `Intent.delete_intent_report(report_id, context)` — access to the
+  `/intent/{id}/intentReport` sub-resource, whose path depends on the parent intent's id
+  and so cannot be expressed as a static `get_resource_path`.
+- `ProbeIntent` — subtype of `Intent` with the same fields and resource path; emits
+  `@baseType: Intent`.
+- `IntentReport` — report to the intent owner on an intent's status, without CRUD of its
+  own (see above). Fields: `id`, `href`, `name`, `description`, `creationDate`,
+  `validFor`, `expression`, `intent` (`Intent` or `IntentRef`).
+- `IntentSpecification` (CRUD, `intentManagement/v5/intentSpecification`) — template
+  from which intents are instantiated. Fields: `id`, `href`, `name`, `description`,
+  `version`, `isBundle`, `lifecycleStatus`, `lastUpdate`, `validFor`,
+  `expressionSpecification`, `targetEntitySchema`, `specCharacteristic`,
+  `intentSpecRelationship`, `entitySpecRelationship`, `constraint`, `relatedParty`,
+  `attachment`.
+- `IntentExpression` (`iri`) with subtypes `JsonLdExpression` and `TurtleExpression`
+  (`expressionValue`).
+- `ExpressionSpecification` — `expressionLanguage`, `iri`.
+- Refs: `IntentSpecificationRelationship` (with `role`, `relationshipType`, `validFor`).
+
+### Changed
+
+- `Product.intent` and `Service.intent` (`Intent` or `IntentRef`) now deserialize a
+  payload with `"@type": "Intent"` instead of raising `NotImplementedError`.
+
+### Fixed
+
+- `Entity.from_dict` no longer raises `TypeError` for a single-valued `Union[A, B]` field
+  whose nested object has no `@type` (e.g. `BucketRelationship.bucket`,
+  `IntentReport.intent`). It kept trying the remaining union members after the first one
+  had parsed, passing them the already-built instance; the first member that parses now
+  wins. List-valued union fields are unchanged.
+
+### Notes
+
+- `JsonLdExpression.expressionValue` is typed `Any` and passed through as the raw JSON-LD
+  value. Its keys are vocabulary terms and `@` keywords that cannot be dataclass fields, so
+  the spec's `JsonLdExpressionValue` (and its `context`, `graph` and `common` parts) is not
+  modelled, and a JSON-LD `"@type"` inside it is never resolved to an SDK class.
+- `Intent.intentSpecification` is typed `IntentSpecificationRef` rather than the schema's
+  generic `EntityRef`, as sent by the spec's examples and already used by
+  `ProductSpecification` and `ResourceSpecification`.
+- `IntentSpecification` follows `ServiceSpecification` and `ResourceSpecification`: the
+  schema's `EntitySpecification` parent is flattened in, so `to_dict` emits no
+  `@baseType`.
+- Not included: `CharacteristicSpecification.@valueSchemaLocation`, which would need a new
+  `@`-key mapping in `Entity.to_dict`. `from_dict` still does not read `@schemaLocation`
+  back into `_schema_location` (e.g. on `IntentSpecification.targetEntitySchema`).
+- Field sets are the union of the base, `_FVO` and `_MVO` schemas; `IntentReport` has no
+  variants.
+
 ## 0.27.0 — 2026-09-11
 
 Source spec: TMF717 Customer360 v5.0.1.

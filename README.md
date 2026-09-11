@@ -97,6 +97,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF683 Party Interaction | `partyInteraction/v5` | `PartyInteraction`, `InteractionItem` |
 | TMF656 Service Problem | `serviceProblemManagement/v5` | `ServiceProblem`, `ServiceProblemEventRecord`, `ProblemAcknowledgement`, `ProblemUnacknowledgement`, `ProblemGroup`, `ProblemUngroup` |
 | TMF677 Usage Consumption | `usageConsumption/v5` | `QueryUsageConsumption`, `UsageConsumptionReport`, `Bucket`, `BucketCounter`, `ConsumptionSummary` |
+| TMF717 Customer 360 | `customer360/v5` | `Customer360` (read-only), with `Customer360CustomerVO`, `Customer360AccountVO`, `Customer360LoyaltyAccountVO` and the other `Customer360*VO` value objects |
 
 ## How it works
 

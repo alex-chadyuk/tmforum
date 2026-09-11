@@ -4,6 +4,91 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.27.0 — 2026-09-11
+
+Source spec: TMF717 Customer360 v5.0.1.
+
+First coverage of the Customer360 API. Its single REST resource, the read-only
+`Customer360` overview, was missing along with the 14 value objects it is made of. Each
+value object summarises one of the customer's resources in another API (account,
+agreement, appointment, bill, loyalty account, party interaction, payment method,
+product order, product, promotion, quote, service problem, trouble ticket) and carries the
+`href` of the full resource. The party, contact medium, product order item, time period
+and service structures they embed were already present.
+
+### Added
+
+- `Customer360` (CRUD, `customer360/v5/customer360`) — consolidated, read-only overview of
+  a customer; its id equals the customer's id. Fields: `id`, `href`, `customer`,
+  `account`, `agreement`, `appointment`, `customerBill`, `partyInteraction`,
+  `loyaltyAccount`, `paymentMethod`, `productOrder`, `product`, `promotion`, `quote`,
+  `serviceProblem`, `troubleTicket`, `validFor`.
+- `Customer360CustomerVO` — `id`, `href`, `name`, `status`, `engagedParty`,
+  `contactMedium`, `relatedParty`, `validFor`.
+- `Customer360AccountVO` — `id`, `href`, `name`, `description`, `accountType`, `state`,
+  `lastUpdate`.
+- `Customer360LoyaltyAccountVO` — subtype of `Customer360AccountVO`, adds
+  `accountBalance`, `relatedParty`, `externalIdentifier`.
+- `Customer360AgreementVO` — `id`, `href`, `name`, `agreementType`, `status`,
+  `agreementPeriod`, `agreementSpecification`, `engagedParty` (`PartyRef` or
+  `PartyRoleRef`).
+- `Customer360AppointmentVO` — `id`, `href`, `category`, `description`, `externalId`,
+  `creationDate`, `lastUpdate`, `status`, `validFor`, `calendarEvent`.
+- `Customer360CustomerBillVO` — `id`, `href`, `billNo`, `category`, `state`.
+- `Customer360PartyInteractionVO` — `id`, `href`, `description`, `reason`, `status`,
+  `interactionDate`.
+- `Customer360PaymentMethodVO` — `id`, `href`, `name`, `description`, `isPreferred`,
+  `status`, `statusDate`, `validFor`.
+- `Customer360ProductOrderVO` — `id`, `href`, `category`, `description`, `externalId`,
+  `priority`, `creationDate`, `completionDate`, `expectedCompletionDate`, `state`,
+  `productOrderItem`.
+- `Customer360ProductVO` — `id`, `href`, `name`, `description`, `status`,
+  `productOffering`.
+- `Customer360PromotionVO` — `id`, `href`, `name`, `description`, `type`,
+  `lifecycleStatus`, `lastUpdate`, `validFor`.
+- `Customer360QuoteVO` — `id`, `href`, `version`, `category`, `description`,
+  `creationDate`, `effectiveQuoteCompletionDate`, `expectedFulfillmentStartDate`,
+  `expectedQuoteCompletionDate`, `state`, `validFor`.
+- `Customer360ServiceProblemVO` — `id`, `href`, `category`, `description`,
+  `originatingSystem`, `priority`, `reason`, `status`, `affectedService`.
+- `Customer360TroubleTicketVO` — `id`, `href`, `name`, `description`,
+  `externalIdentifier`, `priority`, `severity`, `ticketType`, `creationDate`,
+  `lastUpdate`, `expectedResolutionDate`, `requestedResolutionDate`, `status`,
+  `statusChangeDate`, `statusChangeReason`.
+- `AppointmentStateType` enum — `confirmed`, `cancelled`, `pending`, `rescheduled`,
+  `inProgress`, `completed`, `expired`, `failed`.
+- `TroubleTicketStatusType` enum — `acknowledged`, `rejected`, `pending`, `held`,
+  `inProgress`, `cancelled`, `closed`, `resolved`.
+- Refs: `AgreementSpecificationRef` (with `description`, `version`), `CalendarEventRef`.
+
+### Changed
+
+- `QuoteStateTypeEnum` (shared by `Quote` and `Customer360QuoteVO`) gains the
+  `acknowledged`, `pending` and `declined` members from the spec, and the value of
+  `CANCELLED` is corrected from `"canceled"` to the TMF spelling `"cancelled"`. **Breaking
+  for `Quote`:** a payload carrying `"canceled"` no longer maps to an enum member and now
+  stays a plain string after `from_dict`.
+- `ProductOrderItem` gains `itemTerm: Optional[List[OrderTerm]]` and `OrderPrice` gains
+  `billingAccount: Optional[BillingAccountRef]`. Both are present in TMF622 v5.0.0 as well
+  as in the product order items TMF717 embeds. The pre-existing SDK field
+  `ProductOrderItem.orderTerm`, which is not in any TMF spec, is kept unchanged, and
+  `CheckProductConfiguration.from_order` still reads item terms from `orderTerm` only.
+
+### Notes
+
+- `Customer360LoyaltyAccountVO` follows the schema and extends `Customer360AccountVO`, so
+  `to_dict` emits `@baseType: Customer360AccountVO`; the spec's example shows
+  `PartyAccount`.
+- Existing enums keep their SDK values where the TMF717 copies differ:
+  `ProductOrderStateType` (the spec lists `inProgress.accepted`, the SDK has
+  `inProgressAccepted` and `queued`) and `ProductStatusType` (the spec's `"aborted "`
+  carries a trailing space).
+- Not included, as they are only reachable through the full `Product` embedded in a
+  product order item and belong to other APIs: the `AgreementItemRef` and `Intent`
+  placeholders, and the v5 fields missing from `GeographicAddress`, `Place` and `Feature`.
+- Field sets are the base schemas; TMF717 has no `_FVO` or `_MVO` variants for its
+  entities.
+
 ## 0.26.0 — 2026-09-09
 
 Source spec: TMF677 Usage Consumption v5.1.0.

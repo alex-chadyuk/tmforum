@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.26.0"
+__version__ = "0.27.0"
 
 
 @dataclass
@@ -568,6 +568,18 @@ class AppliedCustomerBillingRateType(enum.Enum):
     CREDIT_ADJUSTMENT = "appliedBillingChargeCreditAdjustment"
     DEBIT_ADJUSTMENT = "appliedBillingChargeDebitAdjustment"
     PENALTY_FEE = "appliedBillingChargePenaltyFee"
+
+
+@enum.unique
+class AppointmentStateType(enum.Enum):
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+    PENDING = "pending"
+    RESCHEDULED = "rescheduled"
+    IN_PROGRESS = "inProgress"
+    COMPLETED = "completed"
+    EXPIRED = "expired"
+    FAILED = "failed"
 
 
 @enum.unique
@@ -1299,10 +1311,13 @@ class QuoteStateTypeEnum(enum.Enum):
     SENT_TO_CUSTOMER = "sentToCustomer"
     APPROVED = "approved"
     REJECTED = "rejected"
-    CANCELLED = "canceled"
+    CANCELLED = "cancelled"
     ACCEPTED = "accepted"
     INTERNAL_REVISION_REQUESTED = "internalRevisionRequested"
     EXTERNAL_REVISION_REQUESTED = "externalRevisionRequested"
+    ACKNOWLEDGED = "acknowledged"
+    PENDING = "pending"
+    DECLINED = "declined"
 
 
 @enum.unique
@@ -1624,6 +1639,18 @@ class TermDurationExtensionStrategyEnum(enum.Enum):
 
 
 @enum.unique
+class TroubleTicketStatusType(enum.Enum):
+    ACKNOWLEDGED = "acknowledged"
+    REJECTED = "rejected"
+    PENDING = "pending"
+    HELD = "held"
+    IN_PROGRESS = "inProgress"
+    CANCELLED = "cancelled"
+    CLOSED = "closed"
+    RESOLVED = "resolved"
+
+
+@enum.unique
 class WorkflowImpactTypeEnum(enum.Enum):
     PRICE_IMPACTING = "priceImpacting"
     PRODUCT_ORDER_IMPACTING = "productOrderImpacting"
@@ -1660,6 +1687,13 @@ class AgreementItemRef(ItemRef):
 @dataclass(repr=False)
 class AgreementRef(EntityRef):
     _referred_type: str = "Agreement"
+
+
+@dataclass(repr=False)
+class AgreementSpecificationRef(EntityRef):
+    _referred_type: str = "AgreementSpecification"
+    description: Optional[str] = None
+    version: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -1726,6 +1760,11 @@ class BucketRef(EntityRef):
 @dataclass(repr=False)
 class BucketSpecificationRef(EntityRef):
     _referred_type: str = "BucketSpecification"
+
+
+@dataclass(repr=False)
+class CalendarEventRef(EntityRef):
+    _referred_type: str = "CalendarEvent"
 
 
 @dataclass(repr=False)
@@ -5074,6 +5113,7 @@ class OrderPrice(Entity):
     productOfferingPrice: Optional[ProductOfferingPriceRef] = None
     price: Optional[Price] = None
     priceAlteration: Optional[List[PriceAlteration]] = field(default_factory=list)
+    billingAccount: Optional[BillingAccountRef] = None
 
 
 @dataclass(repr=False)
@@ -5109,6 +5149,7 @@ class ProductOrderItem(Entity):
         default_factory=list
     )
     productOrderItem: Optional[List[ProductOrderItem]] = field(default_factory=list)
+    itemTerm: Optional[List[OrderTerm]] = field(default_factory=list)
 
 
 @dataclass(repr=False)
@@ -7650,3 +7691,252 @@ class QueryUsageConsumption(TaskResource, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/usageConsumption/v5/queryUsageConsumption"
+
+
+@dataclass(repr=False)
+class Customer360CustomerVO(Entity):
+    """Summary of the customer a Customer360 overview is built for (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    status: Optional[str] = None
+    engagedParty: Optional[PartyRef] = None
+    contactMedium: Optional[List[ContactMedium]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyOrPartyRole]] = field(default_factory=list)
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class Customer360AccountVO(Entity):
+    """Summary of an account of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    accountType: Optional[str] = None
+    state: Optional[str] = None
+    lastUpdate: Optional[str] = None
+
+
+@dataclass(repr=False)
+class Customer360LoyaltyAccountVO(Customer360AccountVO):
+    """Summary of a loyalty account of a customer, with its balances (TMF717)."""
+
+    accountBalance: Optional[List[AccountBalance]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class Customer360AgreementVO(Entity):
+    """Summary of an agreement of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    agreementType: Optional[str] = None
+    status: Optional[str] = None
+    agreementPeriod: Optional[TimePeriod] = None
+    agreementSpecification: Optional[AgreementSpecificationRef] = None
+    engagedParty: Optional[List[Union[PartyRef, PartyRoleRef]]] = field(
+        default_factory=list
+    )
+
+
+@dataclass(repr=False)
+class Customer360AppointmentVO(Entity):
+    """Summary of an appointment of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    externalId: Optional[str] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    status: Optional[AppointmentStateType] = None
+    validFor: Optional[TimePeriod] = None
+    calendarEvent: Optional[CalendarEventRef] = None
+
+
+@dataclass(repr=False)
+class Customer360CustomerBillVO(Entity):
+    """Summary of a bill of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    billNo: Optional[str] = None
+    category: Optional[str] = None
+    state: Optional[CustomerBillStateType] = None
+
+
+@dataclass(repr=False)
+class Customer360PartyInteractionVO(Entity):
+    """Summary of a party interaction of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    description: Optional[str] = None
+    reason: Optional[str] = None
+    status: Optional[str] = None
+    interactionDate: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class Customer360PaymentMethodVO(Entity):
+    """Summary of a payment method of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    isPreferred: Optional[bool] = None
+    status: Optional[str] = None
+    statusDate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class Customer360ProductOrderVO(Entity):
+    """Summary of a product order of a customer, with its order items (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    externalId: Optional[str] = None
+    priority: Optional[str] = None
+    creationDate: Optional[str] = None
+    completionDate: Optional[str] = None
+    expectedCompletionDate: Optional[str] = None
+    state: Optional[ProductOrderStateType] = None
+    productOrderItem: Optional[List[ProductOrderItem]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class Customer360ProductVO(Entity):
+    """Summary of a product of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[ProductStatusType] = None
+    productOffering: Optional[ProductOfferingRef] = None
+
+
+@dataclass(repr=False)
+class Customer360PromotionVO(Entity):
+    """Summary of a promotion of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    type: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class Customer360QuoteVO(Entity):
+    """Summary of a quote of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    version: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    creationDate: Optional[str] = None
+    effectiveQuoteCompletionDate: Optional[str] = None
+    expectedFulfillmentStartDate: Optional[str] = None
+    expectedQuoteCompletionDate: Optional[str] = None
+    state: Optional[QuoteStateTypeEnum] = None
+    validFor: Optional[TimePeriod] = None
+
+
+@dataclass(repr=False)
+class Customer360ServiceProblemVO(Entity):
+    """Summary of a service problem of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    originatingSystem: Optional[str] = None
+    priority: Optional[int] = None
+    reason: Optional[str] = None
+    status: Optional[str] = None
+    affectedService: Optional[List[ServiceRef]] = field(default_factory=list)
+
+
+@dataclass(repr=False)
+class Customer360TroubleTicketVO(Entity):
+    """Summary of a trouble ticket of a customer (TMF717)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    externalIdentifier: Optional[str] = None
+    priority: Optional[str] = None
+    severity: Optional[str] = None
+    ticketType: Optional[str] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    expectedResolutionDate: Optional[str] = None
+    requestedResolutionDate: Optional[str] = None
+    status: Optional[TroubleTicketStatusType] = None
+    statusChangeDate: Optional[str] = None
+    statusChangeReason: Optional[str] = None
+
+
+@dataclass(repr=False)
+class Customer360(Entity, BaseCRUDMixin):
+    """A consolidated, read-only overview of a customer (TMF717).
+
+    The id of a Customer360 equals the id of the customer. Each list holds value objects
+    summarising the customer's resources in other APIs, with the `href` of the full
+    resource.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    customer: Optional[Customer360CustomerVO] = None
+    account: Optional[List[Customer360AccountVO]] = field(default_factory=list)
+    agreement: Optional[List[Customer360AgreementVO]] = field(default_factory=list)
+    appointment: Optional[List[Customer360AppointmentVO]] = field(default_factory=list)
+    customerBill: Optional[List[Customer360CustomerBillVO]] = field(
+        default_factory=list
+    )
+    partyInteraction: Optional[List[Customer360PartyInteractionVO]] = field(
+        default_factory=list
+    )
+    loyaltyAccount: Optional[List[Customer360LoyaltyAccountVO]] = field(
+        default_factory=list
+    )
+    paymentMethod: Optional[List[Customer360PaymentMethodVO]] = field(
+        default_factory=list
+    )
+    productOrder: Optional[List[Customer360ProductOrderVO]] = field(
+        default_factory=list
+    )
+    product: Optional[List[Customer360ProductVO]] = field(default_factory=list)
+    promotion: Optional[List[Customer360PromotionVO]] = field(default_factory=list)
+    quote: Optional[List[Customer360QuoteVO]] = field(default_factory=list)
+    serviceProblem: Optional[List[Customer360ServiceProblemVO]] = field(
+        default_factory=list
+    )
+    troubleTicket: Optional[List[Customer360TroubleTicketVO]] = field(
+        default_factory=list
+    )
+    validFor: Optional[TimePeriod] = None
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/customer360/v5/customer360"

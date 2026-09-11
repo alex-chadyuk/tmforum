@@ -99,6 +99,7 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 | TMF677 Usage Consumption | `usageConsumption/v5` | `QueryUsageConsumption`, `UsageConsumptionReport`, `Bucket`, `BucketCounter`, `ConsumptionSummary` |
 | TMF717 Customer 360 | `customer360/v5` | `Customer360` (read-only), with `Customer360Customer`, `Customer360Account`, `Customer360LoyaltyAccount` and the other `Customer360*` value objects |
 | TMF921 Intent Management | `intentManagement/v5` | `Intent`, `ProbeIntent`, `IntentSpecification`, `IntentReport` (via `Intent.get_intent_reports`) |
+| TMF701 Process Management | `processManagement/v5` | `Process`, `ProcessSpecification`, `Task`, `TaskSpecification` |
 
 ## How it works
 

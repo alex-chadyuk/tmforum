@@ -4,6 +4,76 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.29.0 — 2026-09-11
+
+Source spec: TMF701 Process Management v5.0.0.
+
+First coverage of the Process Management API. All four of its REST resources were
+missing: `Process` and `Task`, which track the execution of a business or technical
+process, and the `ProcessSpecification` and `TaskSpecification` templates they are
+instantiated from. The characteristic, attachment, party, channel, policy and
+related-entity structures they embed were already present.
+
+### Added
+
+- `Process` (CRUD, `processManagement/v5/process`). Fields: `id`, `href`, `name`,
+  `description`, `state`, `creationDate`, `requestedStartDate`, `startDate`,
+  `requestedCompletionDate`, `completionDate`, `processSpecification`, `channel`,
+  `externalIdentifier`, `processCharacteristic`, `processRelationship`, `task` (`Task` or
+  `TaskRef`), `relatedEntity`, `relatedParty`.
+- `Task` (CRUD, `processManagement/v5/task`). Fields: `id`, `href`, `name`,
+  `description`, `taskType`, `priority`, `isMandatory`, `state`, `startDate`,
+  `completionDate`, `taskSpecification`, `parentProcess`, `channel`,
+  `taskCharacteristic`, `taskRelationship`, `relatedProcess`, `relatedEntity`,
+  `relatedParty`.
+- `ProcessSpecification` (CRUD, `processManagement/v5/processSpecification`). Fields:
+  `id`, `href`, `name`, `description`, `version`, `lifecycleStatus`, `lastUpdate`,
+  `validFor`, `processSpecificationCharacteristic`, `processSpecificationRelationship`,
+  `processSpecificationPolicy`, `taskSpecification`, `channel`, `relatedParty`,
+  `attachment`.
+- `TaskSpecification` (CRUD, `processManagement/v5/taskSpecification`). Fields: `id`,
+  `href`, `name`, `description`, `version`, `taskType`, `lifecycleStatus`, `lastUpdate`,
+  `validFor`, `taskSpecificationCharacteristic`, `taskSpecificationRelationship`,
+  `relatedProcessSpecification`, `taskSpecificationPolicy`, `channel`, `relatedParty`,
+  `attachment`.
+- `FlowCharacteristic` — `modality`, `isPopulated`, `characteristic`.
+- `FlowCharacteristicSpecification` — `modality`, `characteristicSpecification`.
+- `ProcessRelationship` (`relationshipType`, `process`),
+  `ProcessSpecificationRelationship` (`relationshipType`, `processSpecification`) and
+  `TaskSpecificationRelationship` (`relationshipType`, `taskSpecification`).
+- `RelatedProcess` (`role`, `process`) and `RelatedProcessSpecification` (`role`,
+  `processSpecification`).
+- `BooleanCharacteristicValueSpecification` (`value: bool`) and
+  `BooleanArrayCharacteristicValueSpecification` (`value: List[bool]`), the two typed
+  `CharacteristicValueSpecification` subtypes that were missing.
+- `FlowStateType` enum — `ready`, `planned`, `active`, `withdrawn`, `terminated`,
+  `failed`, `completed`, `other`.
+- Refs: `ProcessRef`, `ProcessSpecificationRef` (with `version`), `TaskRef`,
+  `TaskSpecificationRef` (with `version`), `TaskRelationship` (with `relationshipType`).
+
+### Fixed
+
+- A `characteristicValueSpecification` item with `"@type":
+  "BooleanCharacteristicValueSpecification"` or
+  `"BooleanArrayCharacteristicValueSpecification"` now deserializes. Before, `from_dict`
+  dropped it with a printed warning when it came first in the list, and otherwise silently
+  replaced it with a copy of the preceding item.
+
+### Notes
+
+- `Process.externalIdentifier` is a single `ExternalIdentifier`, as in all three TMF701
+  schema variants, not the `List[ExternalIdentifier]` used by other resources. A payload
+  carrying an array there makes `from_dict` raise `AttributeError`.
+- Resource paths use `processManagement/v5`, the domain segment of the spec's example
+  `href`s; the spec's `servers` entry reads `tmf-api/process/v5`.
+- `TaskRelationship` derives from `EntityRef`, as in the spec, so it carries `id`, `href`,
+  `name` and `@referredType` (default `Task`).
+- The spec's `TaskRefOrValue` and `PartyRefOrPartyRoleRef` oneOfs are typed
+  `Union[Task, TaskRef]` and `Union[PartyRef, PartyRoleRef]`, without wrapper classes.
+- Not included: `CharacteristicSpecification.@valueSchemaLocation` (see 0.28.0), and the
+  event, hub, `_EVO` and `_RES` schemas.
+- Field sets are the union of the base, `_FVO` and `_MVO` schemas.
+
 ## 0.28.0 — 2026-09-11
 
 Source spec: TMF921 Intent Management v5.0.0.

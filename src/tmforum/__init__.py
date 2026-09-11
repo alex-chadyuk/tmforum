@@ -7,7 +7,7 @@ import dataclasses
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.28.0"
+__version__ = "0.29.0"
 
 
 @dataclass
@@ -883,6 +883,18 @@ class ExecutedAtEnum(enum.Enum):
     ON_RESOLVED = "onResolved"
     ALWAYS = "always"
     AFTER_ALL = "afterAll"
+
+
+@enum.unique
+class FlowStateType(enum.Enum):
+    READY = "ready"
+    PLANNED = "planned"
+    ACTIVE = "active"
+    WITHDRAWN = "withdrawn"
+    TERMINATED = "terminated"
+    FAILED = "failed"
+    COMPLETED = "completed"
+    OTHER = "other"
 
 
 @enum.unique
@@ -2016,6 +2028,17 @@ class ProcessFlowSpecificationRef(EntityRef):
 
 
 @dataclass(repr=False)
+class ProcessRef(EntityRef):
+    _referred_type: str = "Process"
+
+
+@dataclass(repr=False)
+class ProcessSpecificationRef(EntityRef):
+    _referred_type: str = "ProcessSpecification"
+    version: Optional[str] = None
+
+
+@dataclass(repr=False)
 class ProductOfferingPriceRef(EntityRef):
     _referred_type: str = "ProductOfferingPrice"
     version: Optional[str] = None
@@ -2245,6 +2268,25 @@ class SLARef(EntityRef):
 @dataclass(repr=False)
 class SLAViolationRef(EntityRef):
     _referred_type: Optional[str] = "SLAViolation"
+
+
+@dataclass(repr=False)
+class TaskRef(EntityRef):
+    _referred_type: str = "Task"
+
+
+@dataclass(repr=False)
+class TaskRelationship(EntityRef):
+    """A relationship from one task to another, e.g. requires or triggers (TMF701)."""
+
+    _referred_type: str = "Task"
+    relationshipType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class TaskSpecificationRef(EntityRef):
+    _referred_type: str = "TaskSpecification"
+    version: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -3035,6 +3077,11 @@ class CharacteristicValueSpecification(Entity):
 
 
 @dataclass(repr=False)
+class BooleanArrayCharacteristicValueSpecification(CharacteristicValueSpecification):
+    value: Optional[List[bool]] = None
+
+
+@dataclass(repr=False)
 class MapArrayCharacteristicValueSpecification(CharacteristicValueSpecification):
     value: Optional[List[dict]] = None
 
@@ -3062,6 +3109,11 @@ class StringArrayCharacteristicValueSpecification(CharacteristicValueSpecificati
 @dataclass(repr=False)
 class FloatArrayCharacteristicValueSpecification(CharacteristicValueSpecification):
     value: Optional[List[float]] = None
+
+
+@dataclass(repr=False)
+class BooleanCharacteristicValueSpecification(CharacteristicValueSpecification):
+    value: Optional[bool] = None
 
 
 @dataclass(repr=False)
@@ -8120,3 +8172,187 @@ class Customer360(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/customer360/v5/customer360"
+
+
+@dataclass(repr=False)
+class FlowCharacteristic(Entity):
+    """A characteristic of a process or task, with the modality of its use (TMF701)."""
+
+    modality: Optional[str] = None
+    isPopulated: Optional[bool] = None
+    characteristic: Optional[Characteristic] = None
+
+
+@dataclass(repr=False)
+class FlowCharacteristicSpecification(Entity):
+    """A characteristic specification of a process or task specification (TMF701)."""
+
+    modality: Optional[str] = None
+    characteristicSpecification: Optional[CharacteristicSpecification] = None
+
+
+@dataclass(repr=False)
+class ProcessRelationship(Entity):
+    """A link to another process, e.g. triggers or dependsOn (TMF701)."""
+
+    relationshipType: Optional[str] = None
+    process: Optional[ProcessRef] = None
+
+
+@dataclass(repr=False)
+class ProcessSpecificationRelationship(Entity):
+    relationshipType: Optional[str] = None
+    processSpecification: Optional[ProcessSpecificationRef] = None
+
+
+@dataclass(repr=False)
+class TaskSpecificationRelationship(Entity):
+    relationshipType: Optional[str] = None
+    taskSpecification: Optional[TaskSpecificationRef] = None
+
+
+@dataclass(repr=False)
+class RelatedProcess(Entity):
+    role: Optional[str] = None
+    process: Optional[ProcessRef] = None
+
+
+@dataclass(repr=False)
+class RelatedProcessSpecification(Entity):
+    role: Optional[str] = None
+    processSpecification: Optional[ProcessSpecificationRef] = None
+
+
+@dataclass(repr=False)
+class ProcessSpecification(Entity, BaseCRUDMixin):
+    """Template of a type of process and the task specifications it runs (TMF701)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    processSpecificationCharacteristic: Optional[
+        List[FlowCharacteristicSpecification]
+    ] = field(default_factory=list)
+    processSpecificationRelationship: Optional[
+        List[ProcessSpecificationRelationship]
+    ] = field(default_factory=list)
+    processSpecificationPolicy: Optional[List[PolicyRef]] = field(default_factory=list)
+    taskSpecification: Optional[List[TaskSpecificationRef]] = field(
+        default_factory=list
+    )
+    channel: Optional[List[ChannelRef]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/processManagement/v5/processSpecification"
+
+
+@dataclass(repr=False)
+class TaskSpecification(Entity, BaseCRUDMixin):
+    """Template of a type of task that a process specification is composed of (TMF701)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    version: Optional[str] = None
+    taskType: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    taskSpecificationCharacteristic: Optional[List[FlowCharacteristicSpecification]] = (
+        field(default_factory=list)
+    )
+    taskSpecificationRelationship: Optional[List[TaskSpecificationRelationship]] = (
+        field(default_factory=list)
+    )
+    relatedProcessSpecification: Optional[List[RelatedProcessSpecification]] = field(
+        default_factory=list
+    )
+    taskSpecificationPolicy: Optional[List[PolicyRef]] = field(default_factory=list)
+    channel: Optional[List[ChannelRef]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/processManagement/v5/taskSpecification"
+
+
+@dataclass(repr=False)
+class Task(Entity, BaseCRUDMixin):
+    """A unit of work executed within a process (TMF701)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    taskType: Optional[str] = None
+    priority: Optional[int] = None
+    isMandatory: Optional[bool] = None
+    state: Optional[FlowStateType] = None
+    startDate: Optional[str] = None
+    completionDate: Optional[str] = None
+    taskSpecification: Optional[TaskSpecificationRef] = None
+    parentProcess: Optional[ProcessRef] = None
+    channel: Optional[ChannelRef] = None
+    taskCharacteristic: Optional[List[FlowCharacteristic]] = field(default_factory=list)
+    taskRelationship: Optional[List[TaskRelationship]] = field(default_factory=list)
+    relatedProcess: Optional[List[RelatedProcess]] = field(default_factory=list)
+    relatedEntity: Optional[List[RelatedEntity]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/processManagement/v5/task"
+
+
+@dataclass(repr=False)
+class Process(Entity, BaseCRUDMixin):
+    """A business or technical process executed and monitored by the provider (TMF701).
+
+    ``task`` holds the process's tasks by reference (`TaskRef`) or by value (`Task`).
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    state: Optional[FlowStateType] = None
+    creationDate: Optional[str] = None
+    requestedStartDate: Optional[str] = None
+    startDate: Optional[str] = None
+    requestedCompletionDate: Optional[str] = None
+    completionDate: Optional[str] = None
+    processSpecification: Optional[ProcessSpecificationRef] = None
+    channel: Optional[ChannelRef] = None
+    # A single object in TMF701, unlike the list used by most TMF APIs.
+    externalIdentifier: Optional[ExternalIdentifier] = None
+    processCharacteristic: Optional[List[FlowCharacteristic]] = field(
+        default_factory=list
+    )
+    processRelationship: Optional[List[ProcessRelationship]] = field(
+        default_factory=list
+    )
+    task: Optional[List[Union[Task, TaskRef]]] = field(default_factory=list)
+    relatedEntity: Optional[List[RelatedEntity]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/processManagement/v5/process"

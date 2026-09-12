@@ -4,6 +4,85 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.30.0 — 2026-09-12
+
+`Entity.from_dict` was rewritten after an audit of its edge cases. It used to crash on
+several shapes real servers send (a list where a single value is declared, an unhashable
+`@type`, a non-dict body), lose data silently (vendor `@type`s, unknown keys, the wrong
+member of a union), and abort a whole payload when one nested object failed its class
+validator — 28 of the 535 example payloads in the TM Forum specs could not be parsed at
+all. Parsing is now lenient by default and reports what it cannot map, keeps every
+payload key, and is roughly 40x faster.
+
+### Added
+
+- Strict mode: `Entity.from_dict(data, strict=True)` raises the new `FromDictError`
+  (a `ValueError`) naming the field path, e.g. `Product.productPrice[0]`, wherever lenient
+  parsing would keep a raw value and warn.
+- `Context.strict_parsing` applies strict mode to the CRUD helpers.
+- `Entity.extra_attributes`: payload keys with no matching field (vendor extensions,
+  `@schemaLocation` on a class without the field) are kept there and emitted again by
+  `to_dict`, so a payload survives a round trip unchanged. It is not a dataclass field, so
+  `==` ignores it and `dataclasses.replace` does not carry it over.
+- `@baseType` fallback: an object whose `@type` is unknown but whose `@baseType` names an
+  entity class parses as that class and keeps its own `@type` and `@baseType` on output.
+
+### Changed
+
+- **Breaking:** values that cannot be mapped are kept as they came and reported as a
+  warning on the `tmforum` logger, instead of crashing, being dropped or passing silently.
+  This covers a list for a non-list field (`AttributeError` before), a dict or scalar for a
+  list field (`ValueError` before), a scalar where an object is declared, an object where a
+  scalar or enum is declared, and an unknown `@type` in a list (dropped in 0.29.1).
+- **Breaking:** a nested object rejected by its own `__post_init__` validator no longer
+  aborts the payload; it is kept as a raw dict and reported. A top-level object still
+  raises.
+- **Breaking:** the `WARNING!  Unknown entity type ...` print is gone; parsing now logs on
+  the `tmforum` logger (warnings for unmappable values, debug for unknown enum values,
+  `@baseType` fallbacks and rejected union candidates).
+- **Breaking:** an untyped object in a union field is matched to the member that covers the
+  most payload keys, declaration order breaking ties, and is retried with the next member
+  when one rejects it. Lists used to take the last member that parsed, losing the subtype's
+  own fields (a `Task` in `Process.task` became a `TaskRef`).
+- **Breaking:** `to_dict` emits unknown payload keys and, for a vendor subtype, the wire
+  `@type`/`@baseType`.
+- **Breaking:** `dict` and `Any` fields (`ObjectCharacteristic.value`,
+  `ProductOfferingPriceTable.tableConfig`) keep free-form objects as dicts; a `@type` inside
+  them is no longer turned into an entity.
+- **Breaking:** `List[<enum>]` items are converted to enum members; an explicit `null` for a
+  list field gives the field's default (`[]`, or `None` where that is the default); lists
+  are always new list objects rather than the payload's own.
+- **Breaking:** `from_dict` raises `TypeError` for a non-dict payload, and on the `Entity`
+  base class when `@type` names no entity class.
+- **Breaking:** CRUD helpers no longer build blank entities from error bodies. `from_id`
+  returns `None`, `read`/`update` return the entity unchanged, `create` logs an error and
+  returns the raw response, `query_get` keeps an item it cannot parse in place instead of
+  turning the whole page into raw dicts, and `check_availability` returns a non-list
+  response unchanged.
+
+### Fixed
+
+- `@schemaLocation` and `@targetProductOrderItemSchema` are read back into
+  `_schema_location` and `_target_product_order_item_schema`; `to_dict` emitted them but
+  `from_dict` ignored them, so they were lost on every round trip.
+- Parsing the 535 spec example payloads now loses none of their 493 previously dropped keys
+  and raises none of the 28 previous exceptions.
+
+### Performance
+
+- Type hints are resolved once per class instead of twice per object: about 40x faster
+  (1.12 ms to 0.03 ms per payload over the spec corpus).
+
+### Notes
+
+- Lenient mode can leave a raw dict, list or scalar in a typed field; read
+  `extra_attributes` and the warnings if you need certainty, or use strict mode.
+- On `Target*Schema` objects TM Forum puts the target schema's name in `@type`, and TMF936
+  sends an object for `@targetProductOrderItemSchema` where the SDK declares a string.
+  Both are kept raw, so they warn and fail strict mode.
+- Creating a `Context` sets the `tmforum` logger to DEBUG with a stream handler, so parse
+  messages become visible once one exists.
+
 ## 0.29.1 — 2026-09-11
 
 ### Fixed

@@ -314,8 +314,7 @@ def test_service_specification_to_dict_round_trip(service_specification_1):
 
 
 def test_target_entity_schema_serializes_schema_location():
-    # Entity.from_dict only reverse-maps '@referredType', so '@schemaLocation' has to
-    # be set through the '_schema_location' field to be emitted by to_dict().
+    # '@schemaLocation' round-trips through the '_schema_location' field.
     target_entity_schema = TargetEntitySchema(
         _schema_location="https://mycsp.com/schema/Service.json"
     )

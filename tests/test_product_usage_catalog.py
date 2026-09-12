@@ -212,8 +212,7 @@ def test_product_usage_specification_to_dict_round_trip(
 
 
 def test_target_product_usage_schema_serializes_schema_location():
-    # Entity.from_dict only reverse-maps '@referredType', so '@schemaLocation' has to
-    # be set through the '_schema_location' field to be emitted by to_dict().
+    # '@schemaLocation' round-trips through the '_schema_location' field.
     target_schema_dict = TargetProductUsageSchema(
         _schema_location="https://mycsp.com/schema/MobileDataUsage.json"
     ).to_dict()

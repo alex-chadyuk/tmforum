@@ -1,8 +1,4 @@
-import json
-from types import SimpleNamespace
-
 import pytest
-import requests
 from tmforum import (
     AttachmentRef,
     BooleanCharacteristic,
@@ -10,7 +6,6 @@ from tmforum import (
     CharacteristicSpecificationRelationship,
     CharacteristicValueSpecification,
     ConstraintRef,
-    Context,
     EntityRef,
     EntityRelationship,
     EntitySpecificationRelationship,
@@ -274,25 +269,6 @@ def intent_specification_dict():
             }
         ],
     }
-
-
-@pytest.fixture
-def backend(monkeypatch):
-    """Replaces requests.request with a stub that records calls and returns `body`."""
-    stub = SimpleNamespace(calls=[], body=None)
-
-    def request(method, url, headers=None, data=None):
-        stub.calls.append((method, url))
-        text = json.dumps(stub.body) if stub.body is not None else ""
-        return SimpleNamespace(status_code=200, headers={}, text=text)
-
-    monkeypatch.setattr(requests, "request", request)
-    return stub
-
-
-@pytest.fixture
-def context():
-    return Context(api_base_url="https://host:port/tmf-api", headers={})
 
 
 def test_intent_instantiates_with_id(intent_1):

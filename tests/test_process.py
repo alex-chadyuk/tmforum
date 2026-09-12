@@ -7,7 +7,6 @@ from tmforum import (
     ChannelRef,
     CharacteristicSpecification,
     CharacteristicValueSpecification,
-    Context,
     EntityRef,
     ExternalIdentifier,
     FlowCharacteristic,
@@ -411,11 +410,6 @@ def task_specification_dict():
             }
         ],
     }
-
-
-@pytest.fixture
-def context():
-    return Context(api_base_url="https://host:port/tmf-api", headers={})
 
 
 def test_process_instantiates_with_id(process_1):

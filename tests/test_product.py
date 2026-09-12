@@ -26,6 +26,7 @@ from tmforum import (
     CustomerBillRef,
     Duration,
     EmailContactMedium,
+    FromDictError,
     GeographicAddressContactMedium,
     Individual,
     IndividualRef,
@@ -657,8 +658,13 @@ def test_recurring_charge_throws_exception_when_charge_type_missing():
         "productRelationship": [],
         "externalId": [],
     }
-    with pytest.raises(ValueError) as e_info:
-        product_pbj = Product.from_dict(product)
+    # A nested object its class rejects is kept raw, so the rest of the product parses.
+    product_obj = Product.from_dict(product)
+    assert product_obj.productPrice[0] == product["productPrice"][0]
+
+    with pytest.raises(FromDictError) as e_info:
+        Product.from_dict(product, strict=True)
+    assert e_info.value.path == "Product.productPrice[0]"
 
 
 def test_recurring_charge_throws_exception_when_charge_period_missing():
@@ -688,8 +694,12 @@ def test_recurring_charge_throws_exception_when_charge_period_missing():
         "productRelationship": [],
         "externalId": [],
     }
-    with pytest.raises(ValueError) as e_info:
-        product_pbj = Product.from_dict(product)
+    product_obj = Product.from_dict(product)
+    assert product_obj.productPrice[0] == product["productPrice"][0]
+
+    with pytest.raises(FromDictError) as e_info:
+        Product.from_dict(product, strict=True)
+    assert e_info.value.path == "Product.productPrice[0]"
 
 
 def test_product_throws_exception_when_name_missing():

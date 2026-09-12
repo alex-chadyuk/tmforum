@@ -1,13 +1,55 @@
 from __future__ import annotations
 from dataclasses import dataclass, fields, field
 from datetime import datetime, timezone
-from typing import Any, Optional, List, get_type_hints, get_origin, get_args, Union
-import sys, json, requests, enum
+from typing import (
+    Any,
+    Optional,
+    List,
+    NamedTuple,
+    Tuple,
+    get_type_hints,
+    get_origin,
+    get_args,
+    Union,
+)
+import json, requests, enum
+import contextvars
 import dataclasses
+import functools
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.29.1"
+__version__ = "0.30.0"
+
+
+class FromDictError(ValueError):
+    """Raised by ``Entity.from_dict(..., strict=True)`` for a value it cannot map.
+
+    In the default lenient mode the same situations keep the raw value on the field and
+    log a warning on the ``tmforum`` logger instead.
+    """
+
+    def __init__(self, path: str, reason: str):
+        super().__init__(f"{path}: {reason}")
+        self.path = path
+        self.reason = reason
+
+
+_logger = logging.getLogger("tmforum")
+
+# Set while from_dict builds instances, so Entity.__post_init__ skips the list check for
+# raw values from_dict has already reported. Direct construction still validates.
+_from_dict_active = contextvars.ContextVar("tmforum_from_dict_active", default=False)
+
+# Dataclass fields carrying a TM Forum "@" attribute, used by from_dict and to_dict.
+_WIRE_KEYS = {
+    "_referred_type": "@referredType",
+    "_schema_location": "@schemaLocation",
+    "_target_product_order_item_schema": "@targetProductOrderItemSchema",
+}
+
+# Derived from the class, never stored as an unknown attribute.
+_FRAMEWORK_KEYS = frozenset({"@type", "@baseType"})
 
 
 @dataclass
@@ -41,6 +83,9 @@ class Context:
             in API requests, if any.
         currency_code (str): Default currency code used for monetary values
             (default "USD").
+        strict_parsing (bool): When True, the CRUD helpers parse responses with
+            ``Entity.from_dict(..., strict=True)``, raising `FromDictError` instead of
+            keeping values they cannot map (default False).
     """
 
     authorization_base_url: Optional[str] = None
@@ -55,6 +100,7 @@ class Context:
     operator_name: Optional[str] = None
     headers: Optional[dict] = None
     currency_code: str = "USD"
+    strict_parsing: bool = False
 
     def __post_init__(self):
         if self.logger is None:
@@ -69,6 +115,36 @@ class Context:
                 )
                 handler.setFormatter(formatter)
                 self.logger.addHandler(handler)
+
+
+def _strict_parsing(context) -> bool:
+    return getattr(context, "strict_parsing", False)
+
+
+def _entity_from_response(entity_cls, item, context):
+    """Parses a single-resource response, or returns None when it carries no entity."""
+    if isinstance(item, dict) and item.get("id"):
+        return entity_cls.from_dict(item, strict=_strict_parsing(context))
+    return None
+
+
+def _entities_from_response(entity_cls, items, context):
+    """Parses a list response, keeping any item that cannot be parsed as it came."""
+    if not isinstance(items, list):
+        return items
+
+    entities = []
+    for index, item in enumerate(items):
+        try:
+            entities.append(entity_cls.from_dict(item, strict=_strict_parsing(context)))
+        except (TypeError, ValueError) as error:
+            if _strict_parsing(context):
+                raise
+            context.logger.warning(
+                f"{entity_cls.__name__}[{index}]: {error}; keeping the raw item"
+            )
+            entities.append(item)
+    return entities
 
 
 class BaseCRUDMixin:
@@ -91,6 +167,11 @@ class BaseCRUDMixin:
         entity = entity.read(context)        # Read
         entity = entity.update({...}, context)  # Update
         entity.delete(context)               # Delete
+
+    A response that carries no entity (an error body, for instance) is never parsed into a
+    blank instance: `from_id` returns None, `read` and `update` return the entity
+    unchanged, and `create` returns the raw response. `query_get` keeps a list item it
+    cannot parse in place. Set `Context.strict_parsing` to raise `FromDictError` instead.
     """
 
     @classmethod
@@ -101,9 +182,7 @@ class BaseCRUDMixin:
         url = f"{cls.get_resource_path(context)}/{id}"
         response = requests.request("GET", url, headers=context.headers, data={})
         item = parse_response(response, context)
-        if item.get("id"):
-            return cls.from_dict(item)
-        return None
+        return _entity_from_response(cls, item, context)
 
     @classmethod
     def get_raw(cls, id: str, context: Context):
@@ -122,13 +201,7 @@ class BaseCRUDMixin:
             url = f"{cls.get_resource_path(context)}"
         response = requests.request("GET", url, headers=context.headers, data={})
         items = parse_response(response, context)
-        entities = []
-        try:
-            for item in items:
-                entities.append(cls.from_dict(item))
-            return entities
-        except Exception:
-            return items
+        return _entities_from_response(cls, items, context)
 
     @classmethod
     def make_get_all_curl(cls, context: Context):
@@ -138,13 +211,23 @@ class BaseCRUDMixin:
     def create(self, context: Context):
         """Create the current Entity (as defined by its fields) in the backend, returning
         a new instance with updated fields (e.g., assigned id).
+
+        If the backend answers without an entity (an error body, for instance), logs an
+        error and returns that response unchanged.
         """
         url = f"{self.get_resource_path(context)}"
         payload = self.to_json()
         context.logger.debug(f"POST {url} - {payload}")
         response = requests.request("POST", url, headers=context.headers, data=payload)
         item = parse_response(response, context)
-        return self.__class__.from_dict(item)
+        entity = _entity_from_response(self.__class__, item, context)
+        if entity is None:
+            context.logger.error(
+                f"POST {url} returned no {self.__class__.__name__} id "
+                f"(status {response.status_code})"
+            )
+            return item
+        return entity
 
     def read(self, context: Context):
         """Refresh the current Entity instance by re-fetching its data from the backend using the
@@ -160,9 +243,8 @@ class BaseCRUDMixin:
         url = f"{self.get_resource_path(context)}/{self.id}"
         response = requests.request("GET", url, headers=context.headers, data={})
         item = parse_response(response, context)
-        if item.get("id"):
-            return self.__class__.from_dict(item)
-        return self
+        entity = _entity_from_response(self.__class__, item, context)
+        return entity if entity is not None else self
 
     def make_get_curl(self, context: Context):
         url = f"{self.get_resource_path(context)}/{self.id}"
@@ -193,9 +275,8 @@ class BaseCRUDMixin:
             data=json.dumps(payload),
         )
         item = parse_response(response, context)
-        if item.get("id"):
-            return self.__class__.from_dict(item)
-        return self
+        entity = _entity_from_response(self.__class__, item, context)
+        return entity if entity is not None else self
 
     def query_update(self, payload: Union[dict, list], context: Context):
         base_content_type = context.headers["Content-Type"]
@@ -230,7 +311,9 @@ class Entity:
 
     This class expects subclasses to:
     - Define their fields using Python dataclasses.
-    - Optionally handle post-initialization logic in `__post_init__`.
+    - Optionally handle post-initialization logic in `__post_init__`, raising `ValueError`
+      to reject an object; `from_dict` then keeps such an object as a raw dict rather than
+      failing the whole payload.
     - Leverage `from_dict()` and `to_dict()` for consistent serialization and deserialization.
 
     Usage:
@@ -244,171 +327,62 @@ class Entity:
 
     Serialize to JSON
         json_str = product.to_json()
+
+    Parsing is lenient: a value `from_dict` cannot map is kept as it came and reported as
+    a warning on the "tmforum" logger, so an unexpected payload never costs the rest of
+    the response. `from_dict(data, strict=True)` raises `FromDictError` instead, and
+    `Context.strict_parsing` turns that on for the CRUD helpers. Payload keys with no
+    matching field are kept in `extra_attributes` and emitted again by `to_dict`.
     """
 
     @classmethod
-    def from_dict(cls, data):
-        """Converts a dictionary of data, including nested dictionaries and lists,
-        into an instance of the entity class.
+    def from_dict(cls, data, *, strict: bool = False):
+        """Builds an instance of the entity class from a TM Forum payload.
 
-        The method uses Python type hints to determine which classes
-        to instantiate for nested data and can also utilize '@type' fields to pick the correct class.
+        Nested objects and lists follow the field type hints, and a payload "@type" that
+        names an entity class of this module selects that class. A value that cannot be
+        mapped — an unknown "@type", a list where a single value is declared, an object
+        that its class rejects — is kept as it came and reported on the "tmforum" logger;
+        pass ``strict=True`` to raise `FromDictError` naming the field path instead.
+
+        Payload keys with no matching field, such as vendor extensions, are kept in
+        `extra_attributes` and emitted again by `to_dict`.
         """
+        if not isinstance(data, dict):
+            raise TypeError(
+                f"{cls.__name__}.from_dict expects an object, got {_json_type(data)}"
+            )
 
-        module_dict = sys.modules[__name__].__dict__
-        if isinstance(data, dict) and (type_name := data.get("@type")):
-            cls_candidate = module_dict.get(type_name)
-            if (
-                cls_candidate
-                and isinstance(cls_candidate, type)
-                and issubclass(cls_candidate, Entity)
-                and issubclass(cls_candidate, cls)
-            ):
-                cls = cls_candidate
+        target, keep_wire_type = _resolve_top_level(cls, data, strict)
+        token = _from_dict_active.set(True)
+        try:
+            return _build_entity(target, data, target.__name__, strict, keep_wire_type)
+        finally:
+            _from_dict_active.reset(token)
 
-        field_values = {}
-        cls_fields = fields(cls)
-        type_hints = get_type_hints(cls)
+    @property
+    def extra_attributes(self) -> dict:
+        """Payload keys `from_dict` could not map to a field, such as vendor extensions.
 
-        for field in cls_fields:
-            field_name = field.name
-            field_type = type_hints[field_name]
-
-            if field_name in data:
-                value = data[field_name]
-
-                if getattr(field_type, "__origin__", None) is Union:
-                    union_of_types = field_type.__args__
-                else:
-                    union_of_types = ()
-
-                if field_type is Any:
-                    pass
-                elif isinstance(value, dict):
-                    if type_name := value.get("@type"):
-                        cls_candidate = module_dict.get(type_name)
-                        if (
-                            cls_candidate
-                            and isinstance(cls_candidate, type)
-                            and issubclass(cls_candidate, Entity)
-                        ):
-                            value = cls_candidate.from_dict(value)
-                    elif (
-                        field_type
-                        and isinstance(field_type, type)
-                        and issubclass(field_type, Entity)
-                    ):
-                        try:
-                            value = field_type.from_dict(value)
-                        except ValueError:
-                            pass
-                    else:
-                        for fallback_type in union_of_types:
-                            if isinstance(fallback_type, type) and issubclass(
-                                fallback_type, Entity
-                            ):
-                                try:
-                                    value = fallback_type.from_dict(value)
-                                    break
-                                except ValueError:
-                                    pass
-
-                elif isinstance(value, list):
-                    if union_of_types:
-                        item_type = field_type.__args__[0].__args__[0]
-                    else:
-                        item_type = field_type.__args__[0]
-
-                    if getattr(item_type, "__origin__", None) is Union:
-                        item_types = item_type.__args__
-                        for member in item_types:
-                            if isinstance(member, type) and issubclass(member, Entity):
-                                item_type = member
-                                break
-                    else:
-                        item_types = ()
-
-                    if isinstance(item_type, type) and issubclass(item_type, Entity):
-                        new_list = []
-                        for item in value:
-                            if isinstance(item, dict):
-                                # Reset per item, so an item that cannot be parsed is
-                                # dropped rather than replaced by the previous item.
-                                instantiated_item = None
-                                if type_name := item.get("@type"):
-                                    cls_candidate = module_dict.get(type_name)
-                                    if (
-                                        cls_candidate
-                                        and isinstance(cls_candidate, type)
-                                        and issubclass(cls_candidate, Entity)
-                                    ):
-                                        instantiated_item = cls_candidate.from_dict(
-                                            item
-                                        )
-                                elif item_types:
-                                    for fallback_type in item_types:
-                                        if isinstance(
-                                            fallback_type, type
-                                        ) and issubclass(fallback_type, Entity):
-                                            try:
-                                                instantiated_item = (
-                                                    fallback_type.from_dict(item)
-                                                )
-                                            except Exception:
-                                                pass
-                                else:
-                                    instantiated_item = item_type.from_dict(item)
-                                if instantiated_item is None:
-                                    print(f"WARNING!  Unknown entity type {type_name}")
-                                else:
-                                    new_list.append(instantiated_item)
-
-                            else:
-                                new_list.append(item)
-                        value = new_list
-
-                elif value:
-                    if isinstance(field_type, type) and issubclass(
-                        field_type, enum.Enum
-                    ):
-                        try:
-                            value = field_type(value)
-                        except ValueError:
-                            pass
-
-                    for fallback_type in union_of_types:
-                        if isinstance(fallback_type, type) and issubclass(
-                            fallback_type, enum.Enum
-                        ):
-                            try:
-                                value = fallback_type(value)
-                            except ValueError:
-                                pass
-
-                field_values[field_name] = value
-            else:
-                if field_name == "_referred_type":
-                    if ref_type := data.get("@referredType"):
-                        field_values[field_name] = ref_type
-                elif field.default is not dataclasses.MISSING:
-                    field_values[field_name] = field.default
-                elif field.default_factory is not dataclasses.MISSING:
-                    field_values[field_name] = field.default_factory()
-                else:
-                    field_values[field_name] = None
-
-        return cls(**field_values)
+        `to_dict` emits them after the fields and never lets them override one, so they
+        survive a round trip. This is not a dataclass field: ``==`` ignores it and
+        `dataclasses.replace` does not carry it over.
+        """
+        return self.__dict__.setdefault("_extra_attributes", {})
 
     def to_dict(self):
         """Converts the entity (and any nested entities) back into a dictionary suitable for
         serialization.
         """
         representation = {}
-        if hasattr(self, "_type"):
-            representation["@type"] = self._type
-        else:
-            representation["@type"] = self.__class__.__name__
-        if self.__class__.__base__.__name__ not in [
+        wire_type = getattr(self, "_type", None)
+        representation["@type"] = wire_type or self.__class__.__name__
+        if wire_type:
+            # Parsed from a payload whose "@type" names no class here, so the payload's
+            # own "@baseType" is the only accurate one.
+            if base_type := getattr(self, "_base_type", None):
+                representation["@baseType"] = base_type
+        elif self.__class__.__base__.__name__ not in [
             "Entity",
             "EntityRef",
             "PolicyManagedEntity",
@@ -422,35 +396,21 @@ class Entity:
             if value is None or (isinstance(value, list) and not value):
                 continue
 
-            if field_name == "_referred_type":
-                representation["@referredType"] = value
-                continue
-
-            if field_name == "_schema_location":
-                representation["@schemaLocation"] = value
-                continue
-
-            if field_name == "_target_product_order_item_schema":
-                representation["@targetProductOrderItemSchema"] = value
-                continue
-
             if field_name == "_type":
                 continue
 
-            if isinstance(value, Entity):
-                representation[field_name] = value.to_dict()
-            elif isinstance(value, list):
-                new_list = []
-                for item in value:
-                    if isinstance(item, Entity):
-                        new_list.append(item.to_dict())
-                    else:
-                        new_list.append(item)
-                representation[field_name] = new_list
-            elif isinstance(value, enum.Enum):
-                representation[field_name] = value.value
+            key = _WIRE_KEYS.get(field_name, field_name)
+            if isinstance(value, list):
+                representation[key] = [_serialize(item) for item in value]
             else:
-                representation[field_name] = value
+                representation[key] = _serialize(value)
+
+        if extras := self.__dict__.get("_extra_attributes"):
+            plan = _class_plan(self.__class__)
+            for key, value in extras.items():
+                if key in representation or key in plan.keys or key in _FRAMEWORK_KEYS:
+                    continue
+                representation[key] = value
 
         return representation
 
@@ -463,33 +423,335 @@ class Entity:
         return self.to_json()
 
     def __post_init__(self):
-        hints = get_type_hints(self.__class__)
-        for field_info in dataclasses.fields(self):
-            field_name = field_info.name
-            field_value = getattr(self, field_name)
-            declared_type = hints[field_name]
+        if _from_dict_active.get():
+            # from_dict has already checked every value and reported what it kept raw.
+            return
 
-            if not field_value:
-                continue
-
-            origin = get_origin(declared_type)
-            args = get_args(declared_type)
-
-            is_list_type = False
-            if origin is list:
-                # e.g., List[ProductTerm]
-                is_list_type = True
-            elif origin is Union:
-                # e.g., Union[List[ProductTerm], NoneType]
-                for a in args:
-                    if get_origin(a) is list:
-                        is_list_type = True
-                        break
-
-            if is_list_type and not isinstance(field_value, list):
+        for field_plan in _class_plan(self.__class__).fields:
+            field_value = getattr(self, field_plan.name)
+            if field_plan.is_list and field_value and not isinstance(field_value, list):
                 raise ValueError(
-                    f"Field '{field_name}' is declared as a list but got type '{type(field_value).__name__}' instead."
+                    f"Field '{field_plan.name}' is declared as a list but got type '{type(field_value).__name__}' instead."
                 )
+
+
+class _FieldPlan(NamedTuple):
+    """How `Entity.from_dict` and `to_dict` treat one dataclass field."""
+
+    name: str
+    key: str  # payload key, e.g. "@referredType" for _referred_type
+    field: dataclasses.Field
+    is_list: bool
+    kind: str  # "any" | "dict" | "entity" | "enum" | "scalar"
+    members: Tuple[type, ...]  # entity or enum classes, in declared order
+
+
+class _ClassPlan(NamedTuple):
+    fields: Tuple[_FieldPlan, ...]
+    keys: frozenset  # field names and payload keys
+
+
+def _decompose_annotation(annotation) -> Tuple[bool, str, Tuple[type, ...]]:
+    """Returns (is_list, kind, members) for a field annotation."""
+    members = [
+        argument
+        for argument in (
+            get_args(annotation) if get_origin(annotation) is Union else (annotation,)
+        )
+        if argument is not type(None)
+    ]
+
+    is_list = len(members) == 1 and get_origin(members[0]) is list
+    if is_list:
+        arguments = get_args(members[0])
+        item = arguments[0] if arguments else Any
+        members = list(get_args(item)) if get_origin(item) is Union else [item]
+        members = [member for member in members if member is not type(None)]
+
+    if any(member is Any for member in members):
+        return is_list, "any", ()
+    if any(member is dict or get_origin(member) is dict for member in members):
+        return is_list, "dict", ()
+
+    entities = tuple(
+        member
+        for member in members
+        if isinstance(member, type) and issubclass(member, Entity)
+    )
+    if entities:
+        return is_list, "entity", entities
+
+    enums = tuple(
+        member
+        for member in members
+        if isinstance(member, type) and issubclass(member, enum.Enum)
+    )
+    if enums:
+        return is_list, "enum", enums
+    return is_list, "scalar", ()
+
+
+@functools.lru_cache(maxsize=None)
+def _class_plan(cls) -> _ClassPlan:
+    """Field plans of a dataclass. The only place type hints are resolved."""
+    hints = get_type_hints(cls)
+    plans = tuple(
+        _FieldPlan(
+            field_info.name,
+            _WIRE_KEYS.get(field_info.name, field_info.name),
+            field_info,
+            *_decompose_annotation(hints[field_info.name]),
+        )
+        for field_info in fields(cls)
+    )
+    keys = frozenset(plan.name for plan in plans) | frozenset(
+        plan.key for plan in plans
+    )
+    return _ClassPlan(plans, keys)
+
+
+def _entity_class(type_name) -> Optional[type]:
+    """The entity dataclass a payload "@type" names, if this module defines one."""
+    if not isinstance(type_name, str):
+        return None
+    candidate = globals().get(type_name)
+    if (
+        isinstance(candidate, type)
+        and issubclass(candidate, Entity)
+        and dataclasses.is_dataclass(candidate)
+    ):
+        return candidate
+    return None
+
+
+def _json_type(value) -> str:
+    """Describes a JSON value for a message."""
+    if value is None:
+        return "null"
+    if isinstance(value, dict):
+        return "an object"
+    if isinstance(value, list):
+        return "a list"
+    return type(value).__name__
+
+
+def _field_default(field_info):
+    if field_info.default_factory is not dataclasses.MISSING:
+        return field_info.default_factory()
+    if field_info.default is not dataclasses.MISSING:
+        return field_info.default
+    return None
+
+
+def _unmappable(path, reason, value, strict, cause=None):
+    """Raises in strict mode, otherwise reports and hands back the untouched value."""
+    if strict:
+        raise FromDictError(path, reason) from cause
+    _logger.warning("%s: %s; keeping the raw value", path, reason)
+    return value
+
+
+def _serialize(value):
+    if isinstance(value, Entity):
+        return value.to_dict()
+    if isinstance(value, enum.Enum):
+        return value.value
+    return value
+
+
+def _resolve_top_level(cls, data, strict) -> Tuple[type, bool]:
+    """Picks the class to build, and whether the payload's "@type" must be kept."""
+    type_name = data.get("@type")
+    candidate = _entity_class(type_name)
+    if candidate is not None and issubclass(candidate, cls):
+        return candidate, False
+
+    base = None
+    if type_name is not None and candidate is None:
+        base = _entity_class(data.get("@baseType"))
+        if base is not None and issubclass(base, cls):
+            _logger.debug(
+                "%s: unknown @type %r; parsed as its @baseType %s",
+                cls.__name__,
+                type_name,
+                base.__name__,
+            )
+            return base, True
+
+    if not dataclasses.is_dataclass(cls):
+        raise TypeError(
+            f"{cls.__name__}.from_dict needs an @type naming an entity class of this "
+            f"module, got {type_name!r}"
+        )
+
+    if candidate is not None:
+        # A caller deliberately reading a payload as another class, as
+        # CheckProductConfiguration.from_order reads a ProductRef as a Product.
+        _logger.debug(
+            "%s: payload @type %r is not a subclass; parsed as %s",
+            cls.__name__,
+            type_name,
+            cls.__name__,
+        )
+        return cls, False
+
+    if type_name is None:
+        return cls, False
+
+    if strict:
+        raise FromDictError(cls.__name__, f"unknown @type {type_name!r}")
+    _logger.warning(
+        "%s: unknown @type %r; parsed as %s", cls.__name__, type_name, cls.__name__
+    )
+    return cls, True
+
+
+def _build_entity(cls, data, path, strict, keep_wire_type=False):
+    """Builds one entity: parsed fields first, then the payload keys no field matched."""
+    plan = _class_plan(cls)
+    field_values = {}
+    for field_plan in plan.fields:
+        if field_plan.name in data:
+            value = data[field_plan.name]
+        elif field_plan.key in data:
+            value = data[field_plan.key]
+        else:
+            if (
+                field_plan.field.default is dataclasses.MISSING
+                and field_plan.field.default_factory is dataclasses.MISSING
+            ):
+                field_values[field_plan.name] = None  # required field, absent
+            continue
+        field_values[field_plan.name] = _parse_field(
+            field_plan, value, f"{path}.{field_plan.name}", strict
+        )
+
+    instance = cls(**field_values)
+
+    extras = {
+        key: value
+        for key, value in data.items()
+        if key not in plan.keys and key not in _FRAMEWORK_KEYS
+    }
+    if extras:
+        instance.__dict__["_extra_attributes"] = extras
+    if keep_wire_type:
+        instance.__dict__["_type"] = data["@type"]
+        if (base_type := data.get("@baseType")) is not None:
+            instance.__dict__["_base_type"] = base_type
+    return instance
+
+
+def _parse_field(field_plan, value, path, strict):
+    """Parses the value of one field, list shape included."""
+    if not field_plan.is_list:
+        return _parse_value(field_plan, value, path, strict, in_list=False)
+
+    if value is None:
+        return _field_default(field_plan.field)
+    if not isinstance(value, list):
+        return _unmappable(
+            path, f"expected a list, got {_json_type(value)}", value, strict
+        )
+    return [
+        _parse_value(field_plan, item, f"{path}[{index}]", strict, in_list=True)
+        for index, item in enumerate(value)
+    ]
+
+
+def _parse_value(field_plan, value, path, strict, in_list):
+    """Parses a single value against the field's declared kind."""
+    kind = field_plan.kind
+    if kind in ("any", "dict"):
+        return value  # free-form JSON, kept exactly as it came
+
+    if value is None:
+        if in_list and kind == "entity":
+            return _unmappable(path, "expected an object, got null", value, strict)
+        return value
+
+    if isinstance(value, list):
+        return _unmappable(path, "expected a single value, got a list", value, strict)
+
+    if kind == "entity":
+        if isinstance(value, dict):
+            return _parse_object(field_plan.members, value, path, strict)
+        return _unmappable(
+            path, f"expected an object, got {_json_type(value)}", value, strict
+        )
+
+    if isinstance(value, dict):
+        expected = (
+            f"a {field_plan.members[0].__name__} value"
+            if kind == "enum"
+            else "a scalar value"
+        )
+        return _unmappable(path, f"expected {expected}, got an object", value, strict)
+
+    if kind == "enum":
+        for member in field_plan.members:
+            try:
+                return member(value)
+            except ValueError:
+                continue
+        _logger.debug(
+            "%s: %r is not a value of %s; keeping the string",
+            path,
+            value,
+            field_plan.members[0].__name__,
+        )
+    return value
+
+
+def _parse_object(members, data, path, strict):
+    """Builds a nested entity, choosing its class from "@type" or the declared types."""
+    keep_wire_type = False
+    type_name = data.get("@type")
+    if type_name is not None:
+        candidate = _entity_class(type_name)
+        if candidate is not None:
+            # The payload's own type wins, even when it is unrelated to the declared
+            # one: TM Forum APIs put e.g. an AttachmentRef in an AttachmentRefOrValue.
+            candidates = (candidate,)
+        else:
+            base = _entity_class(data.get("@baseType"))
+            if base is None:
+                return _unmappable(path, f"unknown @type {type_name!r}", data, strict)
+            _logger.debug(
+                "%s: unknown @type %r; parsed as its @baseType %s",
+                path,
+                type_name,
+                base.__name__,
+            )
+            candidates, keep_wire_type = (base,), True
+    else:
+        candidates = _rank_members(members, data)
+
+    last_error = None
+    for candidate in candidates:
+        try:
+            return _build_entity(candidate, data, path, strict, keep_wire_type)
+        except FromDictError:
+            raise
+        except ValueError as error:
+            last_error = error
+            _logger.debug(
+                "%s: %s rejected the object: %s", path, candidate.__name__, error
+            )
+
+    names = " or ".join(candidate.__name__ for candidate in candidates)
+    return _unmappable(
+        path, f"{names} rejected the object: {last_error}", data, strict, last_error
+    )
+
+
+def _rank_members(members, data):
+    """Orders union members by how many payload keys each can hold, ties by declaration."""
+    if len(members) == 1:
+        return members
+    return sorted(
+        members, key=lambda member: -len(_class_plan(member).keys & data.keys())
+    )
 
 
 @dataclass(repr=False)
@@ -2610,9 +2872,7 @@ class Intent(Entity, BaseCRUDMixin):
             url = f"{url}?{query}"
         response = requests.request("GET", url, headers=context.headers, data={})
         items = parse_response(response, context)
-        if not isinstance(items, list):
-            return items
-        return [IntentReport.from_dict(item) for item in items]
+        return _entities_from_response(IntentReport, items, context)
 
     def get_intent_report(self, report_id: str, context: Context):
         """Retrieve one report of this intent by its id, or None if it is not found."""
@@ -2624,9 +2884,7 @@ class Intent(Entity, BaseCRUDMixin):
         url = f"{self._intent_report_path(context)}/{report_id}"
         response = requests.request("GET", url, headers=context.headers, data={})
         item = parse_response(response, context)
-        if isinstance(item, dict) and item.get("id"):
-            return IntentReport.from_dict(item)
-        return None
+        return _entity_from_response(IntentReport, item, context)
 
     def delete_intent_report(self, report_id: str, context: Context):
         """Delete one report of this intent. Returns the backend's response."""
@@ -6256,10 +6514,7 @@ class ResourcePool(LogicalResource, BaseCRUDMixin):
         url = f"{self.get_resource_path(context)}/{self.id}/availabilityCheck"
         response = requests.request("GET", url, headers=context.headers, data={})
         items = parse_response(response, context)
-        availability_checks = []
-        for item in items:
-            availability_checks.append(AvailabilityCheck.from_dict(item))
-        return availability_checks
+        return _entities_from_response(AvailabilityCheck, items, context)
 
 
 @dataclass(repr=False)

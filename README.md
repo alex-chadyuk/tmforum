@@ -3,7 +3,7 @@
 Unofficial Python SDK for [TM Forum Open APIs](https://www.tmforum.org/oda/open-apis/) — plain-dataclass entity models, `@type`-aware (de)serialization, and thin REST CRUD helpers.
 
 - **No heavy dependencies** — just `requests`. Entities are standard-library `dataclasses`, not pydantic models.
-- **Polymorphism-aware serialization** — `from_dict` resolves `@type` / `@referredType` discriminators to the right Python class; `to_dict` emits them back, so round-tripping TMF payloads preserves their type structure.
+- **Polymorphism-aware serialization** — `from_dict` resolves `@type` / `@referredType` discriminators to the right Python class; `to_dict` emits them back, so round-tripping TMF payloads preserves their type structure, unknown vendor attributes included.
 - **Thin CRUD layer** — `create` / `read` / `update` / `delete` / `query_get` methods that map 1:1 onto the TMF REST conventions. No hidden state, no client object: a small `Context` carries the base URL, auth, and headers.
 
 ## Install
@@ -106,6 +106,17 @@ The SDK targets the **v5** payload shapes of the Open APIs.
 Every entity is a `@dataclass` inheriting from `Entity`, which provides recursive `from_dict` / `to_dict` / `to_json`. Type resolution uses each field's type hints plus the payload's `@type` discriminator, so nested and polymorphic structures (e.g. `RelatedPartyRefOrPartyRoleRef`, price alterations, characteristic subtypes) deserialize into the correct classes.
 
 Entities that map to REST resources also inherit `BaseCRUDMixin`, which implements `from_id`, `create`, `read`, `update` (JSON PATCH semantics), `query_get`, and `delete` against `{context.api_base_url}/{resource_path}`. A `Context` dataclass carries `api_base_url`, `access_token`, `headers`, an optional logger, and OAuth-related fields — pass it to every call; there is no global state.
+
+Parsing is lenient, because real deployments extend and bend the specs. A value `from_dict` cannot map — an unknown `@type`, a list where a single value is declared, an object its class rejects — is kept exactly as it came and reported as a warning on the `tmforum` logger, so one odd field never costs the rest of the response:
+
+```python
+product = Product.from_dict(payload)                 # warns, keeps what it cannot map
+product = Product.from_dict(payload, strict=True)    # raises FromDictError(path=...)
+
+context.strict_parsing = True                        # same, for the CRUD helpers
+```
+
+Payload attributes the SDK does not model — vendor extensions, `@schemaLocation` on a class without the field — are kept in `entity.extra_attributes` and emitted again by `to_dict`, so a payload survives a round trip unchanged. A vendor `@type` the SDK does not know, but whose `@baseType` it does, parses as that base class and keeps its own `@type` on the way out.
 
 ## Status
 

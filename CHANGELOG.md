@@ -4,6 +4,35 @@ All notable changes to the [`tmforum`](https://pypi.org/project/tmforum/) packag
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/) (0.x — API may change between minor versions).
 
+## 0.31.0 — 2026-09-24
+
+Source spec: TMF621 Trouble Ticket v5.0.1.
+
+First coverage of the Trouble Ticket API. Both of its REST resources were missing:
+`TroubleTicket`, the record of an issue tracked by a trouble ticket system, and
+`TroubleTicketSpecification`, the template it is based on. `TroubleTicketStatusType`
+(added with TMF717) and the attachment, party, channel, note, characteristic and
+related-entity structures they embed were already present. All 28 `TroubleTicket` and
+`TroubleTicketSpecification` example payloads in the spec parse in strict mode and lose no
+keys on output.
+
+### Added
+
+- `TroubleTicket` (CRUD, `troubleTicket/v5/troubleTicket`). Fields: `id`, `href`, `name`,
+  `description`, `severity`, `ticketType`, `priority`, `status`, `statusChangeDate`,
+  `statusChangeReason`, `creationDate`, `lastUpdate`, `requestedResolutionDate`,
+  `expectedResolutionDate`, `resolutionDate`, `channel`, `troubleTicketSpecification`,
+  `attachment` (`Attachment` or `AttachmentRef`), `externalIdentifier`, `note`,
+  `relatedEntity`, `relatedParty`, `statusChangeHistory`, `troubleTicketRelationship`,
+  `troubleTicketCharacteristic`.
+- `TroubleTicketSpecification` (CRUD, `troubleTicket/v5/troubleTicketSpecification`).
+  Fields: `id`, `href`, `name`, `description`, `lifecycleStatus`, `version`,
+  `creationDate`, `lastUpdate`, `validFor`, `specCharacteristic`, `relatedParty`.
+- `StatusChange` — `status` (`TroubleTicketStatusType`), `statusChangeDate`,
+  `statusChangeReason`.
+- `TroubleTicketRelationship` (an `EntityRef` to another trouble ticket, with
+  `relationshipType`) and `TroubleTicketSpecificationRef` (with `version`).
+
 ## 0.30.0 — 2026-09-12
 
 `Entity.from_dict` was rewritten after an audit of its edge cases. It used to crash on

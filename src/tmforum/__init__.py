@@ -19,7 +19,7 @@ import functools
 import logging
 from ._helpers import parse_response
 
-__version__ = "0.30.0"
+__version__ = "0.31.0"
 
 
 class FromDictError(ValueError):
@@ -2557,6 +2557,20 @@ class TaskSpecificationRef(EntityRef):
 @dataclass(repr=False)
 class TroubleTicketRef(EntityRef):
     _referred_type: Optional[str] = "TroubleTicket"
+
+
+@dataclass(repr=False)
+class TroubleTicketRelationship(EntityRef):
+    """A relationship from one trouble ticket to another (TMF621)."""
+
+    _referred_type: str = "TroubleTicket"
+    relationshipType: Optional[str] = None
+
+
+@dataclass(repr=False)
+class TroubleTicketSpecificationRef(EntityRef):
+    _referred_type: str = "TroubleTicketSpecification"
+    version: Optional[str] = None
 
 
 @dataclass(repr=False)
@@ -8430,6 +8444,85 @@ class Customer360(Entity, BaseCRUDMixin):
     @classmethod
     def get_resource_path(cls, context: Context) -> str:
         return f"{context.api_base_url}/customer360/v5/customer360"
+
+
+@dataclass(repr=False)
+class StatusChange(Entity):
+    """A past status of a trouble ticket, with the date and reason of the change (TMF621)."""
+
+    status: Optional[TroubleTicketStatusType] = None
+    statusChangeDate: Optional[str] = None
+    statusChangeReason: Optional[str] = None
+
+
+@dataclass(repr=False)
+class TroubleTicketSpecification(Entity, BaseCRUDMixin):
+    """The template of a set of related trouble tickets (TMF621)."""
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    lifecycleStatus: Optional[str] = None
+    version: Optional[str] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    validFor: Optional[TimePeriod] = None
+    specCharacteristic: Optional[List[CharacteristicSpecification]] = field(
+        default_factory=list
+    )
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/troubleTicket/v5/troubleTicketSpecification"
+
+
+@dataclass(repr=False)
+class TroubleTicket(Entity, BaseCRUDMixin):
+    """A record of an issue created, tracked and managed by a trouble ticket system (TMF621).
+
+    ``statusChangeHistory`` is populated by the server; ``troubleTicketRelationship`` links
+    to other trouble tickets.
+    """
+
+    id: Optional[str] = None
+    href: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    severity: Optional[str] = None
+    ticketType: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[TroubleTicketStatusType] = None
+    statusChangeDate: Optional[str] = None
+    statusChangeReason: Optional[str] = None
+    creationDate: Optional[str] = None
+    lastUpdate: Optional[str] = None
+    requestedResolutionDate: Optional[str] = None
+    expectedResolutionDate: Optional[str] = None
+    resolutionDate: Optional[str] = None
+    channel: Optional[ChannelRef] = None
+    troubleTicketSpecification: Optional[TroubleTicketSpecificationRef] = None
+    attachment: Optional[List[AttachmentRefOrValue]] = field(default_factory=list)
+    externalIdentifier: Optional[List[ExternalIdentifier]] = field(default_factory=list)
+    note: Optional[List[Note]] = field(default_factory=list)
+    relatedEntity: Optional[List[RelatedEntity]] = field(default_factory=list)
+    relatedParty: Optional[List[RelatedPartyRefOrPartyRoleRef]] = field(
+        default_factory=list
+    )
+    statusChangeHistory: Optional[List[StatusChange]] = field(default_factory=list)
+    troubleTicketRelationship: Optional[List[TroubleTicketRelationship]] = field(
+        default_factory=list
+    )
+    troubleTicketCharacteristic: Optional[List[Characteristic]] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def get_resource_path(cls, context: Context) -> str:
+        return f"{context.api_base_url}/troubleTicket/v5/troubleTicket"
 
 
 @dataclass(repr=False)
